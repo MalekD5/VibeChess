@@ -44,7 +44,12 @@
 ## File Organization
 
 - `lib/` — shared infrastructure: Prisma client, auth helpers, utilities.
-- `trigger/` — all durable background tasks and AI workflows.
 - `components/` — UI composition only; no business logic.
 - `app/api/` — route handlers for auth, triggering, and persistence.
+- `engine` — deterministic chess computation only (legal move validation, FEN transformation, position evaluation)
+- `orchestrator` — deterministic state machine + side-effect dispatcher
+- `types` — shared types/contracts layer
+- `hooks` — client state layer (react hooks)
+- `prisma` — Database schema and generated client output
+- `data` — Legacy local directory. Not used for new artifacts
 - Name files after the responsibility they contain, not the technology.
