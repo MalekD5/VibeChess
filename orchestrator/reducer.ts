@@ -71,6 +71,15 @@ export function reducer(state: GameState, action: GameAction): GameState {
       if (state.status !== 'active') {
         throw new Error('Cannot resign when game is not active');
       }
+
+      const resignedPlayer =
+        state.players.white?.id === action.playerId ||
+        state.players.black?.id === action.playerId;
+      
+      if (!resignedPlayer) {
+        throw new Error("Only a seated player can resign");
+      }
+
       return {
         ...state,
         status: 'finished',
