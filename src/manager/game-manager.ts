@@ -11,7 +11,19 @@ function enqueue<T>(gameId: string, task: () => T): Promise<T> {
   return next;
 }
 
+/**
+ * Serialises all per-game lifecycle operations through a per-game promise queue,
+ * guaranteeing that concurrent callers never interleave create / delete / move
+ * operations on the same game.
+ */
 class GameManager {
+  /**
+   * Creates a new game and returns its initial state snapshot.
+   *
+   * @param gameId - Unique identifier for the game to create.
+   * @returns A promise that resolves to the initial {@link GameState}.
+   * @throws If the orchestrator rejects the creation (e.g. duplicate id).
+   */
   createGame(gameId: string): Promise<GameState> {
     return enqueue(gameId, () => {
       const snapshot = orchestrator.createGame(gameId);
@@ -20,10 +32,24 @@ class GameManager {
     });
   }
 
+  /**
+   * Returns the current state snapshot for an existing game.
+   *
+   * @param gameId - Unique identifier of the game.
+   * @returns The current {@link GameState}.
+   * @throws If no game with the given id exists.
+   */
   getGame(gameId: string): GameState {
     return orchestrator.getState(gameId);
   }
 
+  /**
+   * Deletes a game and cleans up its queue entry.
+   *
+   * @param gameId - Unique identifier of the game to delete.
+   * @returns A promise that resolves when deletion is complete.
+   * @throws If the orchestrator rejects the deletion.
+   */
   deleteGame(gameId: string): Promise<void> {
     const result = enqueue(gameId, () => {
       orchestrator.deleteGame(gameId);
@@ -33,6 +59,15 @@ class GameManager {
     return result;
   }
 
+  /**
+   * Dispatches a {@link GameAction} against an existing game and returns the
+   * updated state snapshot.
+   *
+   * @param gameId - Unique identifier of the game.
+   * @param action - The action to apply (e.g. `MAKE_MOVE`).
+   * @returns A promise that resolves to the updated {@link GameState}.
+   * @throws Re-throws any error raised by the orchestrator (invalid move, etc.).
+   */
   processEvent(gameId: string, action: GameAction): Promise<GameState> {
     console.log(`[GameManager] event received: game=${gameId} type=${action.type}`);
     return enqueue(gameId, () => {
@@ -53,4 +88,5 @@ class GameManager {
   }
 }
 
+/** Singleton {@link GameManager} instance used throughout the application. */
 export const gameManager = new GameManager();
