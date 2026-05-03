@@ -13,6 +13,7 @@ Update this file whenever the current phase, active feature, or implementation s
 ## Completed
 
 - spec 03 — Game Manager
+- spec 04 — Ably Adapter
 
 ## In Progress
 
