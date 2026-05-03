@@ -17,6 +17,7 @@
 - `lib` — Shared infrastructure: Prisma client, access control helpers, and utilities
 - `engine` — deterministic chess computation only (legal move validation, FEN transformation, position evaluation)
 - `orchestrator` — deterministic state machine + side-effect dispatcher
+- `manager` — process-level controller: owns all orchestrators, single event entry point, per-game sequential queue, lifecycle management, logging hooks
 - `types` — shared types/contracts layer
 - `hooks` — client state layer (react hooks)
 - `components` — UI composition: canvas surfaces, sidebars, dialogs, and interactive elements
