@@ -45,7 +45,7 @@ class AblyGameAdapter {
     const channel = getServerRealtime().channels.get(`game:${gameId}`);
     activeChannels.set(gameId, channel);
 
-    channel.subscribe(async (message) => {
+    channel.subscribe('action', async (message) => {
       const action = parseAction(message.data);
 
       if (!action) {
