@@ -14,6 +14,14 @@ export async function POST(_req: NextRequest, { params }: RouteParams): Promise<
     return NextResponse.json({ error: 'Already subscribed' }, { status: 409 });
   }
 
-  ablyGameAdapter.subscribe(gameId);
-  return NextResponse.json({ gameId, subscribed: true });
+  try {
+    ablyGameAdapter.subscribe(gameId);
+    return NextResponse.json({ gameId, subscribed: true });
+  } catch (err) {
+    console.error('[subscribe] failed to subscribe to game:', gameId, err);
+    return NextResponse.json(
+      { gameId, subscribed: false, error: 'subscription_failed' },
+      { status: 500 }
+    );
+  }
 }
