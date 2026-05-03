@@ -75,7 +75,7 @@ export function reducer(state: GameState, action: GameAction): GameState {
       const resignedPlayer =
         state.players.white?.id === action.playerId ||
         state.players.black?.id === action.playerId;
-      
+
       if (!resignedPlayer) {
         throw new Error("Only a seated player can resign");
       }
