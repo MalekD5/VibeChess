@@ -3,7 +3,7 @@ read @AGENTS.md for context about this project.
 
 Implement Realtime adapter for Able
 
-```
+```text
 Ably messages → Game Manager → Orchestrator → State → Ably broadcast
 ```
 
