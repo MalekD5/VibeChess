@@ -37,6 +37,10 @@ export function GET(req: NextRequest): NextResponse {
 
   const keyName = apiKey.slice(0, colonIndex);
   const keySecret = apiKey.slice(colonIndex + 1);
+  if (!keyName || !keySecret) {
+    return NextResponse.json({ error: 'Malformed ABLY_API_KEY' }, { status: 500 });
+  }
+
   const clientId = crypto.randomUUID();
 
   const token = jwt.sign(
