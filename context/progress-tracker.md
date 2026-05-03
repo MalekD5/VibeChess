@@ -4,19 +4,23 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Phase
 
-- Not started
+- Phase 1 — Foundation
 
 ## Current Goal
 
-- Define the immediate implementation goal here.
+- Build the server-side game state machine (orchestrator, reducer, engine wrapper)
 
 ## Completed
 
-- None yet.
+- Game Orchestrator (spec 01)
+  - `types/game.ts` — GameState, Player, GameAction contracts
+  - `engine/chess-engine.ts` — Chess.js wrapper (contained; not exported outside engine)
+  - `orchestrator/reducer.ts` — pure reducer enforcing all invariants
+  - `orchestrator/game-orchestrator.ts` — in-memory registry; `dispatch` is the sole mutation point
 
 ## In Progress
 
-- None yet.
+- None
 
 ## Next Up
 
@@ -28,8 +32,11 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Architecture Decisions
 
-- Add decisions that affect the system design or data model.
+- Chess.js is wrapped in `engine/chess-engine.ts`; it never leaks into orchestrator or types layers.
+- `orchestrator` singleton is the only in-memory authority over active game state.
+- `dispatch` is the single function that writes back to the game map (enforces the "exactly one mutation function" invariant).
 
 ## Session Notes
 
-- Add context needed to resume work in the next session.
+- All four files (types, engine, reducer, orchestrator) were created in one pass as spec 01.
+- No DB, no Ably, no Next.js — purely in-memory logic. Safe to run on Node runtime only.
