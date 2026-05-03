@@ -12,8 +12,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
-- spec 01 — Game Orchestrator
-- spec 02 — Cleanup & `src/` migration
+- spec 03 — Game Manager
 
 ## In Progress
 
@@ -21,7 +20,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- spec 03
+- Add the next planned spec here.
 
 ## Open Questions
 

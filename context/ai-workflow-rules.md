@@ -57,3 +57,6 @@ Progress state must reflect the actual state of the implementation, not the inte
 1. The current unit works end to end within its defined scope.
 2. No invariant defined in `architecture-context.md` was violated.
 3. `progress-tracker.md` reflects the completed work.
+   - remove any unnecessary session context
+   - update completed items (no need to mention past completed items, just the current item)
+   - do not add any new sections
