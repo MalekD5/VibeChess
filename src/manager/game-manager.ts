@@ -12,20 +12,25 @@ function enqueue<T>(gameId: string, task: () => T): Promise<T> {
 }
 
 class GameManager {
-  createGame(gameId: string): GameState {
-    const snapshot = orchestrator.createGame(gameId);
-    console.log(`[GameManager] game created: ${gameId}`);
-    return snapshot;
+  createGame(gameId: string): Promise<GameState> {
+    return enqueue(gameId, () => {
+      const snapshot = orchestrator.createGame(gameId);
+      console.log(`[GameManager] game created: ${gameId}`);
+      return snapshot;
+    });
   }
 
   getGame(gameId: string): GameState {
     return orchestrator.getState(gameId);
   }
 
-  deleteGame(gameId: string): void {
-    orchestrator.deleteGame(gameId);
-    queues.delete(gameId);
-    console.log(`[GameManager] game deleted: ${gameId}`);
+  deleteGame(gameId: string): Promise<void> {
+    const result = enqueue(gameId, () => {
+      orchestrator.deleteGame(gameId);
+      console.log(`[GameManager] game deleted: ${gameId}`);
+    });
+    result.finally(() => queues.delete(gameId));
+    return result;
   }
 
   processEvent(gameId: string, action: GameAction): Promise<GameState> {
