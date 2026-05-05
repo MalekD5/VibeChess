@@ -1,6 +1,6 @@
 # VibeChess
 
-VibeChess is a vibe-coded chess.com clone with a smaller scope. This project will serve as a to figure out this '_spec driven development_' trend.
+VibeChess is a vibe-coded chess.com clone with a smaller scope. This project will serve as a way to figure out this '_spec driven development_' trend.
 
 ## Specification Driven Development (SDD)
 **Specification Driven Developement** is not a new concept, it has existed as long as software engineering did. The difference now code is completely driven by coding agents like [Claude](https://claude.com/product/overview) and [Codex](https://openai.com/codex/).
