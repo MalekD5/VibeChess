@@ -43,12 +43,6 @@ read AGENTS.md for context about this project.
 Do not forget to inforce invariants
 ```
 
-Then I executed the following prompt:
-```bash
-read @context/specs/01-spec.md, update @context/progress-tracker.md to mark this spec
-as in progress, then implement spec as specified.
-```
-
 However I noticed that after it is done, the agent does not update progress tracker file to indicate that this spec is done. Additionally, I noticed it adding more sections inside the
 progress tracker which I did not ask for. Additionally, I found out it did not enforce the invariants defined in the context files.
 
@@ -74,6 +68,12 @@ Update progress-tracker.md when you are finished:
 ```
 
 This yielded the most consistent results
+
+## Prompt
+```bash
+read @context/specs/{spec-file-name}.md, update @context/progress-tracker.md to mark this spec
+as in progress, then implement spec as specified.
+```
 
 ## References
 - [Specification Driven Development](https://en.wikipedia.org/wiki/Specification-driven_development)
