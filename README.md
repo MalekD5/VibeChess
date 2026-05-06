@@ -91,25 +91,25 @@ verify the result, then update `context/progress-tracker.md` to mark it complete
 ```
 
 ## Codex Issues
-While using Codex GPT 5.5, multiple issues where observed that needs to be mentioned.
+While using Codex GPT 5.5, I observed multiple issues worth mentioning.
 
 ### Code Structure Issues
-Codex is notorious for this when doin g any frontend work. It tends to jam everything into a single file.
+Codex tends to struggle with frontend structure. It often jams everything into a single file.
 
-When asked to refactor the single file into something modular and more structurely coherent, it created a folder under `components` folder and generated 11 files and listed it all under that folder.
+When asked to refactor the single file into something more modular and structurally coherent, it created a folder under `components` and generated 11 files inside it.
 
-When ask to follow the `code-standards.md` for file organizations, it still missed 5 files and basically listed it under the `components` folder.
+When asked to follow `code-standards.md` for file organization, it still missed five files and placed them under `components`.
 
-I attempted to fix this by referencing `code-standards.md` in the spec, prompt, and verify step to respect `code-standards.md` but this did not yield any positive results.
+I attempted to fix this by referencing `code-standards.md` in the spec, prompt, and verification step, but this did not yield positive results.
 
-Modified prompt that still did not yield any better result on Codex:
+This modified prompt still did not yield a better result with Codex:
 ```bash
 read @AGENTS.md , then read @context/specs/08-component-cleanup.md spec. update @context/progress-tracker.md  to mark spec in progress, implement spec while respecting @context/code-standards.md  file organization, verify result against @context/code-standards.md , then update @context/progress-tracker.md to mark spec as completed
 ```
 
-So I completely gave up on Codex, dropped all of codex changes and re-executed the spec implementation using Claude Sonnet 4.6. Running Sonnet on low did initially yield results in the right direction but still it produced a component that is 400+ lines of code with some utility functions still in the same component.
+So I gave up on Codex, dropped all Codex changes, and re-executed the spec implementation using Claude Sonnet 4.6. Running Sonnet on low initially yielded results in the right direction, but it still produced a 400+ line component with some utility functions left inside it.
 
-I cranked up the model to high and it produced a somewhat satisfactory result though not what I wanted. For now, it is good enough to proceed.
+I increased the model setting to high, and it produced a somewhat satisfactory result, though not what I wanted. For now, it is good enough to proceed.
 
 ## References
 - [Specification Driven Development](https://en.wikipedia.org/wiki/Specification-driven_development)
