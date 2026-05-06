@@ -34,7 +34,7 @@ The context folder is structured as follows:
 Another file that you will not find committed is `context/current-issues.md`, this contains any issues found during manual testing by a Human. this is meant as one off prompt as we do not want errors to conflict with other developers.
 
 ### Spec Files
-For Spec files I first followed this pattern:
+Early spec prompts used this pattern:
 ```md
 read AGENTS.md for context about this project.
 
@@ -43,36 +43,51 @@ read AGENTS.md for context about this project.
 Do not forget to inforce invariants
 ```
 
-However I noticed that after it is done, the agent does not update progress tracker file to indicate that this spec is done. Additionally, I noticed it adding more sections inside the
-progress tracker which I did not ask for. Additionally, I found out it did not enforce the invariants defined in the context files.
+That was too loose. Agents often forgot to update `context/progress-tracker.md`, added unwanted sections, or implemented behavior without checking the architecture invariants.
 
-After some testing, This is the structure I settled on:
+The preferred spec prompt is now:
 ```md
 # Spec Name + Number
-read AGENTS.md for context about this project.
+
+Read `AGENTS.md`, then read the required context files in the documented order.
+Do not use files under `context/specs/` except this spec file.
+
+Before implementation:
+- Update `context/progress-tracker.md` to mark this spec as in progress.
+- Identify the system boundary this spec belongs to.
+- Note any ambiguity in `context/progress-tracker.md` before making assumptions.
 
 ## What this layer should do
 {spec details}
 
-## Things to Check
-- application builds
-- all necessary libraries are installed
-- typescript does not emit errors
-- do not forget to enforce invariants
+## Constraints
+- Keep the change limited to this spec.
+- Preserve the invariants from `context/architecture-context.md`.
+- Keep UI, game logic, networking, persistence, and orchestration concerns separate.
+- Do not invent product behavior outside the context files and this spec.
+
+## Verify
+- Application builds.
+- TypeScript does not emit errors.
+- Required dependencies are installed and justified.
+- Relevant tests or focused runtime checks pass.
+- Every changed file respects the documented boundaries and standards.
 - {any other custom things to check for}
 
 Update progress-tracker.md when you are finished:
-- remove any unnecessary session context
-- update completed items (no need to mention past completed items, just the current item)
-- do not add any new sections
+- Set In Progress back to None.
+- Add only the completed current spec/item.
+- Update Current Goal and Next Up if they changed.
+- Do not add new sections.
 ```
 
-This yielded the most consistent results
+This yields the most consistent results because it forces the agent to load context, declare scope, preserve invariants, verify the result, and keep progress tracking tidy.
 
 ## Prompt
 ```bash
-read @context/specs/{spec-file-name}.md, update @context/progress-tracker.md to mark this spec
-as in progress, then implement spec as specified.
+Read `AGENTS.md`, then read `context/specs/{spec-file-name}.md`.
+Update `context/progress-tracker.md` to mark the spec in progress, implement only that spec,
+verify the result, then update `context/progress-tracker.md` to mark it complete.
 ```
 
 ## References
