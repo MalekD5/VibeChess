@@ -19,7 +19,7 @@ The key mindset shift is that you are now designing a system where AI generates 
 ## Methdology
 This project is setup from scratch, the only manual work that is being done by a Human is the `context/` folder and the `AGENTS.md` file, both found in the root of this project. 
 
-The code implementation is completely written by [Claude](https://claude.com/product/overview).
+The code implementation is completely written by [Claude](https://claude.com/product/overview) and [Codex](https://openai.com/codex/).
 
 ### Context Folder
 The context folder is structured as follows:
