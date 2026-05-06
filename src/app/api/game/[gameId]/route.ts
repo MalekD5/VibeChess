@@ -7,6 +7,26 @@ interface RouteParams {
   params: Promise<{ gameId: string }>;
 }
 
+/**
+ * GET route handler for fetching the current game state by `gameId`.
+ *
+ * Route signature: `GET /api/game/[gameId]`
+ *
+ * @param _req - Incoming request object; currently unused.
+ * @param context - Route context containing path parameters.
+ * @param context.params - Promise resolving to `{ gameId: string }`.
+ *
+ * Successful JSON response:
+ * - `200`: `{ gameId: string, state: GameState }`
+ *
+ * Error JSON responses:
+ * - `404`: `{ gameId: string, error: 'game_not_found' }`
+ * - `500`: `{ gameId: string, error: 'game_read_failed' }`
+ *
+ * @returns A `Promise<NextResponse>` from `GET` containing the game state or a
+ * JSON error response. Errors thrown while reading the game are caught and
+ * normalized into the documented error payloads.
+ */
 export async function GET(_req: Request, { params }: RouteParams): Promise<NextResponse> {
   const { gameId } = await params;
 
