@@ -11,11 +11,11 @@ export async function POST(_req: NextRequest, { params }: RouteParams): Promise<
   const { gameId } = await params;
 
   if (ablyGameAdapter.isSubscribed(gameId)) {
-    return NextResponse.json({ error: 'Already subscribed' }, { status: 409 });
+    return NextResponse.json({ gameId, subscribed: true });
   }
 
   try {
-    ablyGameAdapter.subscribe(gameId);
+    await ablyGameAdapter.subscribe(gameId);
     return NextResponse.json({ gameId, subscribed: true });
   } catch (err) {
     console.error('[subscribe] failed to subscribe to game:', gameId, err);
