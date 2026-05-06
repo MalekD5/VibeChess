@@ -54,7 +54,6 @@ Build the missing server entrypoint between the placeholder app and the complete
 - Required dependencies are installed and justified.
 - Relevant tests or focused runtime checks pass.
 - Every changed file respects the documented boundaries and standards.
-- {any other custom things to check for}
 
 Update progress-tracker.md when you are finished:
 - Set In Progress back to None.
