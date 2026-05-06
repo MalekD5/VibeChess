@@ -54,7 +54,7 @@ read AGENTS.md for context about this project.
 ## What this layer should do
 {spec details}
 
-# Things to Check
+## Things to Check
 - application builds
 - all necessary libraries are installed
 - typescript does not emit errors
