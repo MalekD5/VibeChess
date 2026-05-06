@@ -310,7 +310,11 @@ export default function VibeChessApp() {
           </button>
 
           <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+            <label htmlFor="join-game-id" className="sr-only">
+              Existing game ID
+            </label>
             <input
+              id="join-game-id"
               value={joinGameId}
               onChange={(event) => setJoinGameId(event.target.value)}
               placeholder="Existing game ID"
