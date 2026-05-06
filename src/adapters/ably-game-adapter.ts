@@ -39,13 +39,12 @@ function parseAction(data: unknown): GameAction | null {
 }
 
 class AblyGameAdapter {
-  subscribe(gameId: string): void {
+  async subscribe(gameId: string): Promise<void> {
     if (activeChannels.has(gameId)) return;
 
     const channel = getServerRealtime().channels.get(`game:${gameId}`);
-    activeChannels.set(gameId, channel);
 
-    channel.subscribe('action', async (message) => {
+    await channel.subscribe('action', async (message) => {
       const action = parseAction(message.data);
 
       if (!action) {
@@ -64,6 +63,7 @@ class AblyGameAdapter {
       }
     });
 
+    activeChannels.set(gameId, channel);
     console.log(`[AblyGameAdapter] subscribed to game:${gameId}`);
   }
 

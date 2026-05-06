@@ -8,12 +8,14 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Add the next planned feature unit here.
+- No active implementation goal.
 
 ## Completed
 
 - spec 03 — Game Manager
 - spec 04 — Ably Adapter
+- spec 05 — Game Session API
+- Prompt workflow guidance optimized.
 
 ## In Progress
 
@@ -21,7 +23,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Add the next planned spec here.
+- Implement the client realtime hook/provider.
 
 ## Open Questions
 
