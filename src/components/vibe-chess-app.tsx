@@ -625,6 +625,7 @@ function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => void }) {
             <div className="grid gap-3">
               <input
                 readOnly
+                aria-label="Share URL"
                 value={shareUrl}
                 className="min-h-10 rounded-xl border border-border bg-elevated px-3 font-mono text-xs text-copy-muted outline-none"
               />
