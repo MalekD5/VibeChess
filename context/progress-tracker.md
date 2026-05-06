@@ -16,6 +16,11 @@ Update this file whenever the current phase, active feature, or implementation s
 - spec 04 — Ably Adapter
 - spec 05 — Game Session API
 - spec 06 — Client Realtime Hook/Provider
+- spec 07 — Playable Game Screen
+- Fixed playable game screen join and seat handling.
+- Stabilized active game singleton across route module instances.
+- Fixed chessboard seated-color perspective and move square mapping.
+- Added server legal-move hints, square-only flash feedback, result modal, and share links.
 - Prompt workflow guidance optimized.
 
 ## In Progress
@@ -24,7 +29,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Build the playable game screen on top of the realtime hook/provider.
+- Add AI game mode foundation.
 
 ## Open Questions
 

@@ -44,8 +44,21 @@ interface GameRealtimeProviderProps extends UseGameRealtimeInput {
 
 const GameRealtimeContext = createContext<GameRealtimeSession | null>(null);
 
-function createMountedPlayerId(): string {
-  return crypto.randomUUID();
+function createMountedPlayerId(gameId: string): string {
+  if (typeof window === 'undefined') {
+    return crypto.randomUUID();
+  }
+
+  const storageKey = `vibechess:player:${gameId}`;
+  const storedPlayerId = window.sessionStorage.getItem(storageKey);
+
+  if (storedPlayerId) {
+    return storedPlayerId;
+  }
+
+  const nextPlayerId = crypto.randomUUID();
+  window.sessionStorage.setItem(storageKey, nextPlayerId);
+  return nextPlayerId;
 }
 
 export function buildJoinGameAction(playerId: string, color: PlayerColor): GameAction {
@@ -70,6 +83,22 @@ function isPlayer(value: unknown): value is GameState['players']['white'] {
   );
 }
 
+function isResult(value: unknown): value is GameState['result'] {
+  if (value === null) return true;
+  if (typeof value !== 'object') return false;
+
+  const obj = value as Record<string, unknown>;
+  return (
+    (obj.outcome === 'white_won' || obj.outcome === 'black_won' || obj.outcome === 'draw') &&
+    (
+      obj.reason === 'checkmate' ||
+      obj.reason === 'stalemate' ||
+      obj.reason === 'draw' ||
+      obj.reason === 'resignation'
+    )
+  );
+}
+
 export function parseStateMessage(data: unknown): GameState | null {
   if (typeof data !== 'object' || data === null) return null;
 
@@ -85,6 +114,7 @@ export function parseStateMessage(data: unknown): GameState | null {
     (msg.currentTurn !== 'white' && msg.currentTurn !== 'black') ||
     typeof msg.fen !== 'string' ||
     (msg.status !== 'waiting' && msg.status !== 'active' && msg.status !== 'finished') ||
+    !isResult(msg.result) ||
     !Array.isArray(msg.moveHistory) ||
     !msg.moveHistory.every((move) => typeof move === 'string') ||
     typeof msg.createdAt !== 'number' ||
@@ -108,7 +138,7 @@ function getErrorMessage(error: unknown): string {
 
 export function useGameRealtime(input: UseGameRealtimeInput): GameRealtimeSession {
   const { gameId, channelName = `game:${gameId}`, initialState } = input;
-  const [playerId] = useState(createMountedPlayerId);
+  const [playerId] = useState(() => createMountedPlayerId(gameId));
   const [state, setState] = useState<GameState | null>(initialState ?? null);
   const [connectionStatus, setConnectionStatus] =
     useState<GameConnectionStatus>('connecting');

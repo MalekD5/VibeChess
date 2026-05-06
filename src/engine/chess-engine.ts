@@ -1,4 +1,4 @@
-import { Chess } from 'chess.js';
+import { Chess, type Square } from 'chess.js';
 import type { MoveInput } from '@/types/game';
 
 export interface MoveResult {
@@ -9,8 +9,29 @@ export interface MoveResult {
   isDraw: boolean;
 }
 
+export interface LegalMove {
+  from: string;
+  to: string;
+  san: string;
+  promotion?: string;
+}
+
 export function getInitialFen(): string {
   return new Chess().fen();
+}
+
+export function getLegalMoves(fen: string, from: string): LegalMove[] {
+  try {
+    const chess = new Chess(fen);
+    return chess.moves({ square: from as Square, verbose: true }).map((move) => ({
+      from: move.from,
+      to: move.to,
+      san: move.san,
+      promotion: move.promotion,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export function isLegalMove(fen: string, move: MoveInput): boolean {
