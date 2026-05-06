@@ -351,6 +351,7 @@ function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => void }) {
   const [shareCopyError, setShareCopyError] = useState<string | null>(null);
   const [resultModalOpen, setResultModalOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const isMoveInFlight = useRef(false);
   const autoJoinAttemptRef = useRef<string | null>(null);
   const flashTimeoutRef = useRef<number | null>(null);
 
@@ -429,7 +430,14 @@ function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => void }) {
     if (autoJoinAttemptRef.current === attemptKey) return;
 
     autoJoinAttemptRef.current = attemptKey;
-    void runAction(() => session.joinGame(autoJoinColor));
+    const joinAttempt = session.joinGame(autoJoinColor);
+    void runAction(() => joinAttempt);
+    void joinAttempt.catch((err) => {
+      if (autoJoinAttemptRef.current === attemptKey) {
+        autoJoinAttemptRef.current = null;
+      }
+      console.warn('Auto-join failed', err);
+    });
   }, [autoJoinColor, runAction, session, state]);
 
   useEffect(() => {
@@ -468,6 +476,7 @@ function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => void }) {
   }
 
   async function handleSquareClick(squareId: string): Promise<void> {
+    if (isMoveInFlight.current) return;
     if (!state) return;
 
     if (state.status !== 'active') {
@@ -524,6 +533,7 @@ function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => void }) {
     const to = squareId;
     setSelectedSquare(null);
     setLegalTargets(new Set());
+    isMoveInFlight.current = true;
     setIsSending(true);
     void session
       .makeMove({
@@ -532,7 +542,10 @@ function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => void }) {
         promotion: getPromotion(squareById.get(from)?.piece, from, to),
       })
       .catch(() => flashInvalidSquare(to))
-      .finally(() => setIsSending(false));
+      .finally(() => {
+        isMoveInFlight.current = false;
+        setIsSending(false);
+      });
   }
 
   async function handleCopyShareUrl(): Promise<void> {
