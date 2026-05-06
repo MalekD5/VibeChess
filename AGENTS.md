@@ -18,3 +18,14 @@ Read the following files in order before implementing or making any architectura
 Update `context/progress-tracker.md` after each meaningful implementation change.
 
 If implementation changes the architecture, scope, or standards documented in the context files, update the relevant file before continuing.
+
+## Spec Implementation Discipline
+
+When implementing a spec:
+
+1. Read only the requested spec file under `context/specs/`; do not browse unrelated specs for extra scope.
+2. Mark the spec as in progress in `context/progress-tracker.md` before changing implementation files.
+3. Keep the change limited to the named spec and the documented system boundary.
+4. Enforce the invariants in `context/architecture-context.md` before considering the work complete.
+5. Verify the change with the narrowest useful build, typecheck, test, or runtime check.
+6. Finish by updating `context/progress-tracker.md` without adding new sections.
