@@ -17,10 +17,12 @@ interface RouteParams {
  * @param context.params - Promise resolving to `{ gameId: string }`.
  *
  * Successful JSON response:
- * - `200`: `{ gameId: string, state: GameState }`
+ * - `200`: `{ gameId: string, state: GameState }` for games still waiting
+ *   for a second player.
  *
  * Error JSON responses:
  * - `404`: `{ gameId: string, error: 'game_not_found' }`
+ * - `409`: `{ gameId: string, error: 'game_already_started' }`
  * - `500`: `{ gameId: string, error: 'game_read_failed' }`
  *
  * @returns A `Promise<NextResponse>` from `GET` containing the game state or a
@@ -32,6 +34,14 @@ export async function GET(_req: Request, { params }: RouteParams): Promise<NextR
 
   try {
     const state = gameManager.getGame(gameId);
+
+    if (state.status !== 'waiting') {
+      return NextResponse.json(
+        { gameId, error: 'game_already_started' },
+        { status: 409 },
+      );
+    }
+
     return NextResponse.json({ gameId, state });
   } catch (err) {
     if (err instanceof Error && err.message.includes('not found')) {

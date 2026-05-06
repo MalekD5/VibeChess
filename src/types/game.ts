@@ -1,5 +1,7 @@
 export type PlayerColor = 'white' | 'black';
 export type GameStatus = 'waiting' | 'active' | 'finished';
+export type GameResultReason = 'checkmate' | 'stalemate' | 'draw' | 'resignation';
+export type GameOutcome = 'white_won' | 'black_won' | 'draw';
 
 export interface Player {
   id: string;
@@ -12,6 +14,7 @@ export interface GameState {
   currentTurn: PlayerColor;
   fen: string;
   status: GameStatus;
+  result: { outcome: GameOutcome; reason: GameResultReason } | null;
   moveHistory: string[];
   createdAt: number;
   updatedAt: number;

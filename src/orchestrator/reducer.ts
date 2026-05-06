@@ -13,12 +13,13 @@ export function createInitialState(gameId: string): GameState {
   return {
     gameId,
     players: { white: null, black: null },
-    currentTurn: 'white',
-    fen: getInitialFen(),
-    status: 'waiting',
-    moveHistory: [],
-    createdAt: now(),
-    updatedAt: now(),
+      currentTurn: 'white',
+      fen: getInitialFen(),
+      status: 'waiting',
+      result: null,
+      moveHistory: [],
+      createdAt: now(),
+      updatedAt: now(),
   };
 }
 
@@ -28,6 +29,26 @@ export function reducer(state: GameState, action: GameAction): GameState {
       if (state.status === 'finished') {
         throw new Error('Cannot join a finished game');
       }
+
+      const existingColor =
+        state.players.white?.id === action.playerId
+          ? 'white'
+          : state.players.black?.id === action.playerId
+            ? 'black'
+            : null;
+
+      if (existingColor === action.color) {
+        return state;
+      }
+
+      if (existingColor !== null) {
+        throw new Error(`Player already joined as ${existingColor}`);
+      }
+
+      if (state.status !== 'waiting') {
+        throw new Error('Cannot join a game that has already started');
+      }
+
       if (state.players[action.color] !== null) {
         throw new Error(`Color ${action.color} is already taken`);
       }
@@ -57,12 +78,24 @@ export function reducer(state: GameState, action: GameAction): GameState {
         throw new Error('Illegal move');
       }
       const isTerminal = result.isCheckmate || result.isStalemate || result.isDraw;
+      const gameResult = result.isCheckmate
+        ? {
+            outcome: `${state.currentTurn}_won` as const,
+            reason: 'checkmate' as const,
+          }
+        : result.isStalemate
+          ? { outcome: 'draw' as const, reason: 'stalemate' as const }
+          : result.isDraw
+            ? { outcome: 'draw' as const, reason: 'draw' as const }
+            : null;
+
       return {
         ...state,
         fen: result.fen,
         moveHistory: [...state.moveHistory, result.san],
         currentTurn: oppositeColor(state.currentTurn),
         status: isTerminal ? 'finished' : 'active',
+        result: gameResult,
         updatedAt: now(),
       };
     }
@@ -83,6 +116,11 @@ export function reducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         status: 'finished',
+        result: {
+          outcome:
+            state.players.white?.id === action.playerId ? 'black_won' : 'white_won',
+          reason: 'resignation',
+        },
         updatedAt: now(),
       };
     }

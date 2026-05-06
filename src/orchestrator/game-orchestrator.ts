@@ -37,4 +37,11 @@ class GameOrchestrator {
   }
 }
 
-export const orchestrator = new GameOrchestrator();
+const globalForVibeChess = globalThis as typeof globalThis & {
+  __vibechessOrchestrator?: GameOrchestrator;
+};
+
+export const orchestrator =
+  globalForVibeChess.__vibechessOrchestrator ?? new GameOrchestrator();
+
+globalForVibeChess.__vibechessOrchestrator = orchestrator;

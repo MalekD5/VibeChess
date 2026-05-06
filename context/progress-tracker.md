@@ -12,11 +12,21 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
+- Fixed chessboard dark-square parity so a1 renders dark.
+- Fixed client promotion detection so only pawns auto-promote.
+- Fixed share-link copy failure handling.
+- Fixed failed auto-join retry handling.
 - spec 03 — Game Manager
 - spec 04 — Ably Adapter
 - spec 05 — Game Session API
 - spec 06 — Client Realtime Hook/Provider
+- spec 07 — Playable Game Screen
+- Fixed playable game screen join and seat handling.
+- Stabilized active game singleton across route module instances.
+- Fixed chessboard seated-color perspective and move square mapping.
+- Added server legal-move hints, square-only flash feedback, result modal, and share links.
 - Prompt workflow guidance optimized.
+- Fixed duplicate move submissions from rapid board clicks.
 
 ## In Progress
 
@@ -24,7 +34,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Build the playable game screen on top of the realtime hook/provider.
+- Add AI game mode foundation.
 
 ## Open Questions
 
