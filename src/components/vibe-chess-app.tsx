@@ -354,6 +354,7 @@ function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => void }) {
   const isMoveInFlight = useRef(false);
   const autoJoinAttemptRef = useRef<string | null>(null);
   const flashTimeoutRef = useRef<number | null>(null);
+  const latestLegalRequestRef = useRef<number>(0);
 
   const seatedColor = useMemo<PlayerColor | null>(() => {
     if (state?.players.white?.id === session.playerId) return 'white';
@@ -497,12 +498,18 @@ function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => void }) {
         return;
       }
 
+      const requestId = ++latestLegalRequestRef.current;
       setSelectedSquare(squareId);
       try {
-        setLegalTargets(await fetchLegalTargets(squareId));
+        const targets = await fetchLegalTargets(squareId);
+        if (latestLegalRequestRef.current === requestId) {
+          setLegalTargets(targets);
+        }
       } catch {
-        setLegalTargets(new Set());
-        flashInvalidSquare(squareId);
+        if (latestLegalRequestRef.current === requestId) {
+          setLegalTargets(new Set());
+          flashInvalidSquare(squareId);
+        }
       }
       return;
     }
@@ -514,12 +521,18 @@ function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => void }) {
     }
 
     if (square?.piece && square.pieceColor === seatedColor) {
+      const requestId = ++latestLegalRequestRef.current;
       setSelectedSquare(squareId);
       try {
-        setLegalTargets(await fetchLegalTargets(squareId));
+        const targets = await fetchLegalTargets(squareId);
+        if (latestLegalRequestRef.current === requestId) {
+          setLegalTargets(targets);
+        }
       } catch {
-        setLegalTargets(new Set());
-        flashInvalidSquare(squareId);
+        if (latestLegalRequestRef.current === requestId) {
+          setLegalTargets(new Set());
+          flashInvalidSquare(squareId);
+        }
       }
       return;
     }
@@ -774,13 +787,40 @@ function GameResultModal({
   onClose(): void;
   onNewGame(): void;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const firstActionRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<Element | null>(null);
+
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement;
+    firstActionRef.current?.focus();
+    return () => {
+      (previousFocusRef.current as HTMLElement | null)?.focus();
+    };
+  }, []);
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onClose();
+    }
+  }
+
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-base/80 px-4 backdrop-blur-sm">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="game-result-title"
+      onKeyDown={handleKeyDown}
+      className="fixed inset-0 z-50 grid place-items-center bg-base/80 px-4 backdrop-blur-sm"
+    >
       <section className="w-full max-w-sm rounded-3xl border border-border bg-elevated p-6 shadow-2xl shadow-base/60">
         <p className="font-mono text-xs uppercase tracking-wider text-brand">Game over</p>
-        <h2 className="mt-2 text-2xl font-semibold text-copy-primary">{result}</h2>
+        <h2 id="game-result-title" className="mt-2 text-2xl font-semibold text-copy-primary">{result}</h2>
         <div className="mt-6 grid gap-2 sm:grid-cols-2">
           <button
+            ref={firstActionRef}
             type="button"
             onClick={onNewGame}
             className="rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-copy-primary transition hover:bg-brand/90"
