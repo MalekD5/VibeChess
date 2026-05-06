@@ -353,6 +353,7 @@ function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => void }) {
   const [isSending, setIsSending] = useState(false);
   const isMoveInFlight = useRef(false);
   const autoJoinAttemptRef = useRef<string | null>(null);
+  const [autoJoinInFlight, setAutoJoinInFlight] = useState(false);
   const flashTimeoutRef = useRef<number | null>(null);
   const latestLegalRequestRef = useRef<number>(0);
 
@@ -431,14 +432,19 @@ function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => void }) {
     if (autoJoinAttemptRef.current === attemptKey) return;
 
     autoJoinAttemptRef.current = attemptKey;
+    setAutoJoinInFlight(true);
     const joinAttempt = session.joinGame(autoJoinColor);
     void runAction(() => joinAttempt);
-    void joinAttempt.catch((err) => {
-      if (autoJoinAttemptRef.current === attemptKey) {
-        autoJoinAttemptRef.current = null;
-      }
-      console.warn('Auto-join failed', err);
-    });
+    void joinAttempt.then(
+      () => setAutoJoinInFlight(false),
+      (err) => {
+        if (autoJoinAttemptRef.current === attemptKey) {
+          autoJoinAttemptRef.current = null;
+        }
+        setAutoJoinInFlight(false);
+        console.warn('Auto-join failed', err);
+      },
+    );
   }, [autoJoinColor, runAction, session, state]);
 
   useEffect(() => {
@@ -655,7 +661,7 @@ function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => void }) {
                     state.status !== 'waiting' ||
                     state.players[color] !== null ||
                     seatedColor !== null ||
-                    autoJoinColor !== null ||
+                    autoJoinInFlight ||
                     isSending
                   }
                   className="flex items-center justify-between rounded-xl border border-border bg-elevated px-3 py-3 text-sm transition hover:border-brand disabled:cursor-not-allowed disabled:opacity-60"
