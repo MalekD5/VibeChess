@@ -15,6 +15,7 @@ Update this file whenever the current phase, active feature, or implementation s
 - spec 03 — Game Manager
 - spec 04 — Ably Adapter
 - spec 05 — Game Session API
+- spec 06 — Client Realtime Hook/Provider
 - Prompt workflow guidance optimized.
 
 ## In Progress
@@ -23,7 +24,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Implement the client realtime hook/provider.
+- Build the playable game screen on top of the realtime hook/provider.
 
 ## Open Questions
 
