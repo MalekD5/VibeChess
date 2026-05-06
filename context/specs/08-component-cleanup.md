@@ -12,6 +12,8 @@ Before implementation:
 
 The current component `src/components/vibe-chess-app.tsx` is a 700+ lines and very difficult to read. This should be split into a modular code without changing the logic so it can be clean and readable.
 
+respect `context/code-standards.md` while implementing this spec.
+
 ## Constraints
 - Keep the change limited to this spec.
 - Preserve the invariants from `context/architecture-context.md`.
@@ -19,6 +21,7 @@ The current component `src/components/vibe-chess-app.tsx` is a 700+ lines and ve
 - Do not invent product behavior outside the context files and this spec.
 
 ## Verify
+- `context/code-standards.md` is correctly followed during the refactor.
 - Application builds.
 - TypeScript does not emit errors.
 - Required dependencies are installed and justified.
