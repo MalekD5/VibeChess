@@ -90,6 +90,27 @@ Update `context/progress-tracker.md` to mark the spec in progress, implement onl
 verify the result, then update `context/progress-tracker.md` to mark it complete.
 ```
 
+## Codex Issues
+While using Codex GPT 5.5, I observed multiple issues worth mentioning.
+
+### Code Structure Issues
+Codex tends to struggle with frontend structure. It often jams everything into a single file.
+
+When asked to refactor the single file into something more modular and structurally coherent, it created a folder under `components` and generated 11 files inside it.
+
+When asked to follow `code-standards.md` for file organization, it still missed five files and placed them under `components`.
+
+I attempted to fix this by referencing `code-standards.md` in the spec, prompt, and verification step, but this did not yield positive results.
+
+This modified prompt still did not yield a better result with Codex:
+```bash
+read @AGENTS.md , then read @context/specs/08-component-cleanup.md spec. update @context/progress-tracker.md  to mark spec in progress, implement spec while respecting @context/code-standards.md  file organization, verify result against @context/code-standards.md , then update @context/progress-tracker.md to mark spec as completed
+```
+
+So I gave up on Codex, dropped all Codex changes, and re-executed the spec implementation using Claude Sonnet 4.6. Running Sonnet on low initially yielded results in the right direction, but it still produced a 400+ line component with some utility functions left inside it.
+
+I increased the model setting to high, and it produced a somewhat satisfactory result, though not what I wanted. For now, it is good enough to proceed.
+
 ## References
 - [Specification Driven Development](https://en.wikipedia.org/wiki/Specification-driven_development)
 - [javascript mastery approach to spec driven development](https://www.youtube.com/watch?v=14RP8liACqo)

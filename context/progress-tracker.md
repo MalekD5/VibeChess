@@ -27,6 +27,7 @@ Update this file whenever the current phase, active feature, or implementation s
 - Added server legal-move hints, square-only flash feedback, result modal, and share links.
 - Prompt workflow guidance optimized.
 - Fixed duplicate move submissions from rapid board clicks.
+- spec 08 — Component Cleanup
 
 ## In Progress
 
