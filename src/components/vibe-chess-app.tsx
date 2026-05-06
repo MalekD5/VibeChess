@@ -150,13 +150,54 @@ function formatResult(state: GameState): string {
   return `${winner} wins by ${state.result.reason}`;
 }
 
-function getPromotion(from: string, to: string): 'q' | undefined {
+function getPromotion(
+  movingPiece: string | null | undefined,
+  from: string,
+  to: string,
+): 'q' | undefined {
+  if (movingPiece !== pieceGlyphs.P && movingPiece !== pieceGlyphs.p) {
+    return undefined;
+  }
+
   const fromRank = from.at(1);
   const targetRank = to.at(1);
   if ((fromRank === '7' && targetRank === '8') || (fromRank === '2' && targetRank === '1')) {
     return 'q';
   }
   return undefined;
+}
+
+function copyTextWithTextarea(text: string): boolean {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    return document.execCommand('copy');
+  } finally {
+    document.body.removeChild(textarea);
+  }
+}
+
+async function copyTextToClipboard(text: string): Promise<void> {
+  try {
+    if (!navigator.clipboard) {
+      throw new Error('Clipboard API is unavailable');
+    }
+
+    await navigator.clipboard.writeText(text);
+    return;
+  } catch (err) {
+    console.error('Clipboard API copy failed', err);
+  }
+
+  if (!copyTextWithTextarea(text)) {
+    throw new Error('Fallback copy failed');
+  }
 }
 
 export default function VibeChessApp() {
@@ -303,6 +344,7 @@ function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => void }) {
   const [legalTargets, setLegalTargets] = useState<Set<string>>(() => new Set());
   const [flashSquare, setFlashSquare] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
+  const [shareCopyError, setShareCopyError] = useState<string | null>(null);
   const [resultModalOpen, setResultModalOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const autoJoinAttemptRef = useRef<string | null>(null);
@@ -483,10 +525,24 @@ function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => void }) {
       .makeMove({
         from,
         to,
-        promotion: getPromotion(from, to),
+        promotion: getPromotion(squareById.get(from)?.piece, from, to),
       })
       .catch(() => flashInvalidSquare(to))
       .finally(() => setIsSending(false));
+  }
+
+  async function handleCopyShareUrl(): Promise<void> {
+    setShareCopyError(null);
+
+    try {
+      await copyTextToClipboard(shareUrl);
+      setShareCopied(true);
+      window.setTimeout(() => setShareCopied(false), 1200);
+    } catch (err) {
+      console.error('Could not copy share link', err);
+      setShareCopied(false);
+      setShareCopyError('Could not copy link. Select the URL and copy it manually.');
+    }
   }
 
   return (
@@ -544,16 +600,16 @@ function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => void }) {
               />
               <button
                 type="button"
-                onClick={() => {
-                  void navigator.clipboard.writeText(shareUrl).then(() => {
-                    setShareCopied(true);
-                    window.setTimeout(() => setShareCopied(false), 1200);
-                  });
-                }}
+                onClick={() => void handleCopyShareUrl()}
                 className="rounded-xl border border-border-subtle bg-subtle px-3 py-2 text-sm font-medium text-copy-primary transition hover:border-brand"
               >
                 {shareCopied ? 'Copied' : 'Copy share link'}
               </button>
+              {shareCopyError ? (
+                <p className="rounded-xl border border-error/40 bg-error/10 px-3 py-2 text-xs text-error">
+                  {shareCopyError}
+                </p>
+              ) : null}
             </div>
           </Panel>
 
@@ -648,7 +704,7 @@ function ChessBoard({
     <div className="grid flex-1 place-items-center">
       <div className="grid aspect-square w-full max-w-[min(82vh,760px)] grid-cols-8 overflow-hidden rounded-2xl border border-border-subtle bg-elevated">
         {squares.map((square) => {
-          const isDark = (square.rank + square.fileIndex) % 2 === 0;
+          const isDark = (square.rank + square.fileIndex) % 2 !== 0;
           const isSelected = selectedSquare === square.id;
           const isLegalTarget = legalTargets.has(square.id);
           const isFlashing = flashSquare === square.id;

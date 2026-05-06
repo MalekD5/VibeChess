@@ -12,6 +12,9 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
+- Fixed chessboard dark-square parity so a1 renders dark.
+- Fixed client promotion detection so only pawns auto-promote.
+- Fixed share-link copy failure handling.
 - spec 03 — Game Manager
 - spec 04 — Ably Adapter
 - spec 05 — Game Session API
