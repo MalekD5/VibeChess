@@ -477,7 +477,7 @@ function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => void }) {
 
   async function handleSquareClick(squareId: string): Promise<void> {
     if (isMoveInFlight.current) return;
-    if (!state) return;
+    if (!state || !isSending) return;
 
     if (state.status !== 'active') {
       flashInvalidSquare(squareId);
