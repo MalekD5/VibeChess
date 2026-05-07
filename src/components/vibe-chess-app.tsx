@@ -4,20 +4,24 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   GameRealtimeProvider,
 } from '@/hooks/game-realtime';
-import type { GameState } from '@/types/game';
+import type { AiDifficulty, GameState, PlayerColor } from '@/types/game';
 import { parseJsonResponse } from '@/lib/api-client';
 import { PlayableGameScreen } from '@/components/playable-game-screen';
+
+type GameMode = 'human' | 'ai';
 
 interface GameSetup {
   gameId: string;
   channelName: string;
   state: GameState;
+  playerId?: string;
 }
 
 interface CreateGameResponse {
   gameId: string;
   channelName: string;
   state: GameState;
+  playerId?: string;
 }
 
 interface JoinGameResponse {
@@ -28,6 +32,9 @@ interface JoinGameResponse {
 export default function VibeChessApp() {
   const [gameSetup, setGameSetup] = useState<GameSetup | null>(null);
   const [joinGameId, setJoinGameId] = useState('');
+  const [gameMode, setGameMode] = useState<GameMode>('human');
+  const [playerColor, setPlayerColor] = useState<PlayerColor>('white');
+  const [aiDifficulty, setAiDifficulty] = useState<AiDifficulty>('medium');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const initialJoinAttemptRef = useRef(false);
@@ -74,7 +81,18 @@ export default function VibeChessApp() {
     setError(null);
 
     try {
-      const response = await fetch('/api/game', { method: 'POST' });
+      const response = await fetch('/api/game', {
+        method: 'POST',
+        headers: gameMode === 'ai' ? { 'Content-Type': 'application/json' } : undefined,
+        body:
+          gameMode === 'ai'
+            ? JSON.stringify({
+                mode: 'ai',
+                playerColor,
+                aiDifficulty,
+              })
+            : undefined,
+      });
       const data = await parseJsonResponse<CreateGameResponse>(
         response,
         'Could not create game',
@@ -105,6 +123,7 @@ export default function VibeChessApp() {
         gameId={gameSetup.gameId}
         channelName={gameSetup.channelName}
         initialState={gameSetup.state}
+        initialPlayerId={gameSetup.playerId}
       >
         <PlayableGameScreen onBackToStart={() => setGameSetup(null)} />
       </GameRealtimeProvider>
@@ -125,6 +144,81 @@ export default function VibeChessApp() {
         </div>
 
         <div className="mt-8 grid gap-3">
+          <div className="grid gap-2">
+            <span className="text-xs font-medium uppercase text-copy-muted">
+              Mode
+            </span>
+            <div className="grid grid-cols-2 gap-2">
+              {(['human', 'ai'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setGameMode(mode)}
+                  disabled={isLoading}
+                  className={`rounded-xl border px-3 py-2 text-sm font-medium capitalize transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                    gameMode === mode
+                      ? mode === 'ai'
+                        ? 'border-ai bg-ai/15 text-ai-text'
+                        : 'border-brand bg-accent-dim text-copy-primary'
+                      : 'border-border bg-elevated text-copy-secondary hover:border-brand hover:text-copy-primary'
+                  }`}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {gameMode === 'ai' ? (
+            <div className="grid gap-3">
+              <div className="grid gap-2">
+                <span className="text-xs font-medium uppercase text-copy-muted">
+                  Your color
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['white', 'black'] as const).map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setPlayerColor(color)}
+                      disabled={isLoading}
+                      className={`rounded-xl border px-3 py-2 text-sm font-medium capitalize transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                        playerColor === color
+                          ? 'border-brand bg-accent-dim text-copy-primary'
+                          : 'border-border-subtle bg-subtle text-copy-secondary hover:border-brand hover:text-copy-primary'
+                      }`}
+                    >
+                      {color}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <span className="text-xs font-medium uppercase text-copy-muted">
+                  Difficulty
+                </span>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['easy', 'medium', 'hard'] as const).map((difficulty) => (
+                    <button
+                      key={difficulty}
+                      type="button"
+                      onClick={() => setAiDifficulty(difficulty)}
+                      disabled={isLoading}
+                      className={`rounded-xl border px-3 py-2 text-sm font-medium capitalize transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                        aiDifficulty === difficulty
+                          ? 'border-ai bg-ai/15 text-ai-text'
+                          : 'border-border-subtle bg-subtle text-copy-secondary hover:border-ai hover:text-copy-primary'
+                      }`}
+                    >
+                      {difficulty}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           <button
             type="button"
             onClick={createGame}

@@ -34,6 +34,8 @@ Update this file whenever the current phase, active feature, or implementation s
 - Prompt workflow guidance optimized.
 - Fixed duplicate move submissions from rapid board clicks.
 - spec 08 — Component Cleanup
+- spec 10 — AI Players
+- Fixed AI follow-up trigger for human seats without explicit kind metadata.
 
 ## In Progress
 
@@ -41,7 +43,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Add AI game mode foundation.
+- None
 
 ## Open Questions
 

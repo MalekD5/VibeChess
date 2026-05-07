@@ -9,6 +9,7 @@ import { Panel, InfoRow } from '@/components/ui/panel';
 function formatPlayerLabel(state: GameState, color: PlayerColor, playerId: string): string {
   const player = state.players[color];
   if (!player) return 'Open';
+  if (player.kind === 'ai') return `AI ${player.aiDifficulty}`;
   return player.id === playerId ? 'You' : 'Joined';
 }
 
@@ -98,29 +99,38 @@ export function GameSidebar({
 
       <Panel title="Players">
         <div className="grid gap-2">
-          {(['white', 'black'] as const).map((color) => (
-            <button
-              key={color}
-              type="button"
-              onClick={() => onJoin(color)}
-              disabled={
-                state.status !== 'waiting' ||
-                state.players[color] !== null ||
-                seatedColor !== null ||
-                manualJoinColor !== null ||
-                autoJoinInFlight ||
-                isSending
-              }
-              className="flex items-center justify-between rounded-xl border border-border bg-elevated px-3 py-3 text-sm transition hover:border-brand disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <span className="font-medium capitalize text-copy-primary">{color}</span>
-              <span className="text-copy-muted">
-                {manualJoinColor === color
-                  ? 'Joining...'
-                  : formatPlayerLabel(state, color, session.playerId)}
-              </span>
-            </button>
-          ))}
+          {(['white', 'black'] as const).map((color) => {
+            const player = state.players[color];
+            const isAiPlayer = player?.kind === 'ai';
+
+            return (
+              <button
+                key={color}
+                type="button"
+                onClick={() => onJoin(color)}
+                disabled={
+                  state.status !== 'waiting' ||
+                  player !== null ||
+                  seatedColor !== null ||
+                  manualJoinColor !== null ||
+                  autoJoinInFlight ||
+                  isSending
+                }
+                className={`flex items-center justify-between rounded-xl border px-3 py-3 text-sm transition hover:border-brand disabled:cursor-not-allowed disabled:opacity-60 ${
+                  isAiPlayer
+                    ? 'border-ai/60 bg-ai/10'
+                    : 'border-border bg-elevated'
+                }`}
+              >
+                <span className="font-medium capitalize text-copy-primary">{color}</span>
+                <span className={isAiPlayer ? 'text-ai-text' : 'text-copy-muted'}>
+                  {manualJoinColor === color
+                    ? 'Joining...'
+                    : formatPlayerLabel(state, color, session.playerId)}
+                </span>
+              </button>
+            );
+          })}
         </div>
         {autoJoinColor ? (
           <p className="mt-3 text-xs text-copy-muted">

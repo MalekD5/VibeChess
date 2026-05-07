@@ -1,5 +1,5 @@
 import { validateAndApplyMove, getInitialFen } from '@/engine/chess-engine';
-import type { GameState, GameAction, PlayerColor } from '@/types/game';
+import type { GameState, GameAction, Player, PlayerColor } from '@/types/game';
 
 function now(): number {
   return Date.now();
@@ -13,13 +13,34 @@ export function createInitialState(gameId: string): GameState {
   return {
     gameId,
     players: { white: null, black: null },
-      currentTurn: 'white',
-      fen: getInitialFen(),
-      status: 'waiting',
-      result: null,
-      moveHistory: [],
-      createdAt: now(),
-      updatedAt: now(),
+    currentTurn: 'white',
+    fen: getInitialFen(),
+    status: 'waiting',
+    result: null,
+    moveHistory: [],
+    createdAt: now(),
+    updatedAt: now(),
+  };
+}
+
+function createPlayer(action: Extract<GameAction, { type: 'JOIN_GAME' }>): Player {
+  if (action.playerKind === 'ai') {
+    if (!action.aiDifficulty) {
+      throw new Error('AI difficulty is required');
+    }
+
+    return {
+      id: action.playerId,
+      color: action.color,
+      kind: 'ai',
+      aiDifficulty: action.aiDifficulty,
+    };
+  }
+
+  return {
+    id: action.playerId,
+    color: action.color,
+    kind: 'human',
   };
 }
 
@@ -54,7 +75,7 @@ export function reducer(state: GameState, action: GameAction): GameState {
       }
       const players = {
         ...state.players,
-        [action.color]: { id: action.playerId, color: action.color },
+        [action.color]: createPlayer(action),
       };
       const bothJoined = players.white !== null && players.black !== null;
       return {
