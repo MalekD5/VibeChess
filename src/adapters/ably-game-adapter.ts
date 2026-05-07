@@ -2,7 +2,8 @@ import type { RealtimeChannel } from 'ably';
 import { getServerRealtime } from '@/lib/ably';
 import { gameManager } from '@/manager/game-manager';
 import { playAiTurnIfNeeded } from '@/manager/ai-turn';
-import type { GameAction, GameState, MoveInput, PlayerColor } from '@/types/game';
+import { parseClientGameActionMessage } from '@/lib/game-schemas';
+import type { GameState } from '@/types/game';
 
 const globalForVibeChess = globalThis as typeof globalThis & {
   __vibechessAblyActiveChannels?: Map<string, RealtimeChannel>;
@@ -12,56 +13,6 @@ const activeChannels =
   globalForVibeChess.__vibechessAblyActiveChannels ?? new Map<string, RealtimeChannel>();
 
 globalForVibeChess.__vibechessAblyActiveChannels = activeChannels;
-
-function isPlayerColor(value: unknown): value is PlayerColor {
-  return value === 'white' || value === 'black';
-}
-
-function isMoveInput(value: unknown): value is MoveInput {
-  if (typeof value === 'string') return true;
-  if (typeof value !== 'object' || value === null) return false;
-  const obj = value as Record<string, unknown>;
-  return typeof obj.from === 'string' && typeof obj.to === 'string';
-}
-
-function parseJsonObject(value: unknown): Record<string, unknown> | null {
-  if (typeof value === 'object' && value !== null) {
-    return value as Record<string, unknown>;
-  }
-
-  if (typeof value !== 'string') return null;
-
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return typeof parsed === 'object' && parsed !== null
-      ? (parsed as Record<string, unknown>)
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function parseAction(data: unknown): GameAction | null {
-  const msg = parseJsonObject(data);
-  if (!msg) return null;
-  if (typeof msg.playerId !== 'string') return null;
-
-  switch (msg.type) {
-    case 'JOIN_GAME':
-      if (!isPlayerColor(msg.color)) return null;
-      return { type: 'JOIN_GAME', playerId: msg.playerId, color: msg.color };
-
-    case 'MAKE_MOVE':
-      if (!isMoveInput(msg.move)) return null;
-      return { type: 'MAKE_MOVE', playerId: msg.playerId, move: msg.move as MoveInput };
-
-    case 'RESIGN':
-      return { type: 'RESIGN', playerId: msg.playerId };
-
-    default:
-      return null;
-  }
-}
 
 function getActionPlayer(state: GameState, playerId: string) {
   if (state.players.white?.id === playerId) return state.players.white;
@@ -85,7 +36,7 @@ class AblyGameAdapter {
     const channel = getServerRealtime().channels.get(`game:${gameId}`);
 
     await channel.subscribe('action', async (message) => {
-      const action = parseAction(message.data);
+      const action = parseClientGameActionMessage(message.data);
 
       if (!action) {
         console.warn(`[AblyGameAdapter] invalid message shape on game:${gameId}`);

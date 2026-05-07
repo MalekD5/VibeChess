@@ -3,75 +3,23 @@ import { NextResponse } from 'next/server';
 import { ablyGameAdapter } from '@/adapters/ably-game-adapter';
 import { gameManager } from '@/manager/game-manager';
 import { playAiTurnIfNeeded } from '@/manager/ai-turn';
-import type { AiDifficulty, GameState, PlayerColor } from '@/types/game';
+import type { GameState, PlayerColor } from '@/types/game';
+import {
+  parseGameCreationRequestBody,
+  type GameCreationRequest,
+} from '@/lib/game-schemas';
 
 export const runtime = 'nodejs';
 
-interface HumanGameSetup {
-  mode: 'human';
-}
-
-interface AiGameSetup {
-  mode: 'ai';
-  playerColor: PlayerColor;
-  aiDifficulty: AiDifficulty;
-}
-
-type GameSetup = HumanGameSetup | AiGameSetup;
-
-function isPlayerColor(value: unknown): value is PlayerColor {
-  return value === 'white' || value === 'black';
-}
-
-function isAiDifficulty(value: unknown): value is AiDifficulty {
-  return value === 'easy' || value === 'medium' || value === 'hard';
-}
+type AiGameSetup = Extract<GameCreationRequest, { mode: 'ai' }>;
 
 function oppositeColor(color: PlayerColor): PlayerColor {
   return color === 'white' ? 'black' : 'white';
 }
 
-async function parseGameSetup(req: Request): Promise<GameSetup> {
+async function parseGameSetup(req: Request): Promise<GameCreationRequest> {
   const rawBody = await req.text();
-  if (!rawBody.trim()) {
-    return { mode: 'human' };
-  }
-
-  let body: unknown;
-  try {
-    body = JSON.parse(rawBody) as unknown;
-  } catch {
-    throw new Error('Invalid JSON body');
-  }
-
-  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
-    throw new Error('Request body must be an object');
-  }
-
-  const obj = body as Record<string, unknown>;
-  const mode = obj.mode ?? 'human';
-
-  if (mode === 'human') {
-    return { mode: 'human' };
-  }
-
-  if (mode !== 'ai') {
-    throw new Error('Game mode must be human or ai');
-  }
-
-  if (!isPlayerColor(obj.playerColor)) {
-    throw new Error('Player color is required for AI mode');
-  }
-
-  if (!isAiDifficulty(obj.aiDifficulty)) {
-    throw new Error('AI difficulty is required for AI mode');
-  }
-
-  return {
-    mode,
-    playerColor: obj.playerColor,
-    aiDifficulty: obj.aiDifficulty,
-  };
+  return parseGameCreationRequestBody(rawBody);
 }
 
 async function createAiGame(
@@ -131,7 +79,7 @@ async function createAiGame(
  * `{ "error": "subscription_failed", "message": "ABLY_API_KEY ..." }`.
  */
 export async function POST(req: Request): Promise<NextResponse> {
-  let setup: GameSetup;
+  let setup: GameCreationRequest;
   try {
     setup = await parseGameSetup(req);
   } catch (err) {

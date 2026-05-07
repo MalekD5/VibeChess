@@ -1,9 +1,21 @@
-export type PlayerColor = 'white' | 'black';
-export type PlayerKind = 'human' | 'ai';
-export type AiDifficulty = 'easy' | 'medium' | 'hard';
-export type GameStatus = 'waiting' | 'active' | 'finished';
-export type GameResultReason = 'checkmate' | 'stalemate' | 'draw' | 'resignation';
-export type GameOutcome = 'white_won' | 'black_won' | 'draw';
+export const PLAYER_COLORS = ['white', 'black'] as const;
+export const PLAYER_KINDS = ['human', 'ai'] as const;
+export const AI_DIFFICULTIES = ['easy', 'medium', 'hard'] as const;
+export const GAME_STATUSES = ['waiting', 'active', 'finished'] as const;
+export const GAME_RESULT_REASONS = [
+  'checkmate',
+  'stalemate',
+  'draw',
+  'resignation',
+] as const;
+export const GAME_OUTCOMES = ['white_won', 'black_won', 'draw'] as const;
+
+export type PlayerColor = (typeof PLAYER_COLORS)[number];
+export type PlayerKind = (typeof PLAYER_KINDS)[number];
+export type AiDifficulty = (typeof AI_DIFFICULTIES)[number];
+export type GameStatus = (typeof GAME_STATUSES)[number];
+export type GameResultReason = (typeof GAME_RESULT_REASONS)[number];
+export type GameOutcome = (typeof GAME_OUTCOMES)[number];
 
 export interface HumanPlayer {
   id: string;

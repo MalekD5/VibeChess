@@ -12,6 +12,10 @@ import {
   type ReactNode,
 } from 'react';
 import type { GameAction, GameState, MoveInput, PlayerColor } from '@/types/game';
+import {
+  parseGameStateMessage,
+  parseRealtimePayloadObject,
+} from '@/lib/game-schemas';
 
 export type GameConnectionStatus =
   | 'idle'
@@ -79,112 +83,12 @@ export function buildResignAction(playerId: string): GameAction {
   return { type: 'RESIGN', playerId };
 }
 
-function isPlayer(value: unknown): value is GameState['players']['white'] {
-  if (value === null) return true;
-  if (typeof value !== 'object') return false;
-  const obj = value as Record<string, unknown>;
-
-  if (obj.kind === 'ai') {
-    return (
-      typeof obj.id === 'string' &&
-      (obj.color === 'white' || obj.color === 'black') &&
-      (obj.aiDifficulty === 'easy' ||
-        obj.aiDifficulty === 'medium' ||
-        obj.aiDifficulty === 'hard')
-    );
-  }
-
-  return (
-    typeof obj.id === 'string' &&
-    (obj.color === 'white' || obj.color === 'black') &&
-    (obj.kind === undefined || obj.kind === 'human')
-  );
-}
-
-function isResult(value: unknown): value is GameState['result'] {
-  if (value === null || value === undefined) return true;
-  if (typeof value !== 'object') return false;
-
-  const obj = value as Record<string, unknown>;
-  return (
-    (obj.outcome === 'white_won' || obj.outcome === 'black_won' || obj.outcome === 'draw') &&
-    (
-      obj.reason === 'checkmate' ||
-      obj.reason === 'stalemate' ||
-      obj.reason === 'draw' ||
-      obj.reason === 'resignation'
-    )
-  );
-}
-
-function parseRealtimeObject(value: unknown): Record<string, unknown> | null {
-  let current = value;
-
-  for (let depth = 0; depth < 4; depth += 1) {
-    if (typeof current === 'string') {
-      try {
-        current = JSON.parse(current) as unknown;
-        continue;
-      } catch {
-        return null;
-      }
-    }
-
-    if (typeof current !== 'object' || current === null) {
-      return null;
-    }
-
-    const obj = current as Record<string, unknown>;
-
-    if ('players' in obj || 'type' in obj || 'message' in obj) {
-      return obj;
-    }
-
-    if ('state' in obj) {
-      current = obj.state;
-      continue;
-    }
-
-    if ('data' in obj) {
-      current = obj.data;
-      continue;
-    }
-
-    return obj;
-  }
-
-  return null;
-}
-
 export function parseStateMessage(data: unknown): GameState | null {
-  const msg = parseRealtimeObject(data);
-  if (!msg) return null;
-
-  const players = msg.players as Record<string, unknown> | undefined;
-
-  if (
-    typeof msg.gameId !== 'string' ||
-    typeof players !== 'object' ||
-    players === null ||
-    !isPlayer(players.white) ||
-    !isPlayer(players.black) ||
-    (msg.currentTurn !== 'white' && msg.currentTurn !== 'black') ||
-    typeof msg.fen !== 'string' ||
-    (msg.status !== 'waiting' && msg.status !== 'active' && msg.status !== 'finished') ||
-    !isResult(msg.result) ||
-    !Array.isArray(msg.moveHistory) ||
-    !msg.moveHistory.every((move) => typeof move === 'string') ||
-    (typeof msg.createdAt !== 'number' && typeof msg.createdAt !== 'string') ||
-    (typeof msg.updatedAt !== 'number' && typeof msg.updatedAt !== 'string')
-  ) {
-    return null;
-  }
-
-  return msg as unknown as GameState;
+  return parseGameStateMessage(data);
 }
 
 function getMessageError(data: unknown): string {
-  const msg = parseRealtimeObject(data);
+  const msg = parseRealtimePayloadObject(data);
   if (!msg) return 'Realtime error';
   return typeof msg.message === 'string' ? msg.message : 'Realtime error';
 }
