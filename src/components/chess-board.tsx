@@ -103,8 +103,8 @@ export function ChessBoard({
   onSquareClick(squareId: string): void | Promise<void>;
 }) {
   return (
-    <div className="grid flex-1 place-items-center">
-      <div className="grid aspect-square w-full max-w-[min(82vh,760px)] grid-cols-8 overflow-hidden rounded-2xl border border-border-subtle bg-elevated">
+    <div className="grid min-h-0 place-items-center">
+      <div className="grid aspect-square w-full max-w-[min(100%,calc(100dvh-10rem),760px)] grid-cols-8 overflow-hidden rounded-2xl border border-border-subtle bg-elevated">
         {squares.map((square) => {
           const isDark = (square.rank + square.fileIndex) % 2 !== 0;
           const isSelected = selectedSquare === square.id;

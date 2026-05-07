@@ -25,6 +25,9 @@ export function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => voi
   const [resultModalOpen, setResultModalOpen] = useState(false);
   const autoJoinAttemptRef = useRef<string | null>(null);
   const [autoJoinInFlight, setAutoJoinInFlight] = useState(false);
+  const [manualJoinColor, setManualJoinColor] = useState<PlayerColor | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const manualJoinTimeoutRef = useRef<number | null>(null);
 
   const seatedColor = useMemo<PlayerColor | null>(() => {
     if (state?.players.white?.id === session.playerId) return 'white';
@@ -54,13 +57,43 @@ export function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => voi
     return `${window.location.origin}/?game=${encodeURIComponent(session.gameId)}`;
   }, [session.gameId]);
 
-  const runAction = useCallback(async (action: () => Promise<void>): Promise<void> => {
+  const runAction = useCallback(async (action: () => Promise<void>): Promise<boolean> => {
     try {
       await action();
+      setActionError(null);
+      return true;
     } catch (err) {
-      console.warn(err instanceof Error ? err.message : 'Action failed');
+      const message = err instanceof Error ? err.message : 'Action failed';
+      setActionError(message);
+      console.warn(message);
+      return false;
     }
   }, []);
+
+  const handleManualJoin = useCallback(
+    async (color: PlayerColor): Promise<void> => {
+      if (manualJoinColor !== null) return;
+
+      setManualJoinColor(color);
+      const sent = await runAction(() => session.joinGame(color));
+
+      if (!sent) {
+        setManualJoinColor(null);
+        return;
+      }
+
+      if (manualJoinTimeoutRef.current !== null) {
+        window.clearTimeout(manualJoinTimeoutRef.current);
+      }
+
+      manualJoinTimeoutRef.current = window.setTimeout(() => {
+        setManualJoinColor(null);
+        setActionError('Seat request was sent, but no server state update arrived.');
+        manualJoinTimeoutRef.current = null;
+      }, 5000);
+    },
+    [manualJoinColor, runAction, session],
+  );
 
   const { selectedSquare, legalTargets, flashSquare, isSending, handleSquareClick } =
     useBoardInteraction({
@@ -99,6 +132,29 @@ export function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => voi
     return () => window.clearTimeout(timer);
   }, [state?.status]);
 
+  useEffect(() => {
+    if (manualJoinColor === null) return;
+    if (seatedColor === null && state?.players[manualJoinColor] === null) return;
+
+    const timer = window.setTimeout(() => {
+      if (manualJoinTimeoutRef.current !== null) {
+        window.clearTimeout(manualJoinTimeoutRef.current);
+        manualJoinTimeoutRef.current = null;
+      }
+      setManualJoinColor(null);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [manualJoinColor, seatedColor, state?.players]);
+
+  useEffect(() => {
+    return () => {
+      if (manualJoinTimeoutRef.current !== null) {
+        window.clearTimeout(manualJoinTimeoutRef.current);
+      }
+    };
+  }, []);
+
   if (!state) {
     return (
       <main className="flex min-h-dvh flex-1 items-center justify-center px-4">
@@ -108,9 +164,9 @@ export function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => voi
   }
 
   return (
-    <main className="flex min-h-dvh flex-1 flex-col px-4 py-5 sm:px-6 lg:px-8">
-      <div className="mx-auto grid w-full max-w-7xl flex-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="flex min-w-0 flex-col rounded-2xl border border-border bg-surface p-3 sm:p-4">
+    <main className="flex h-dvh flex-1 flex-col overflow-hidden px-4 py-5 sm:px-6 lg:px-8">
+      <div className="mx-auto grid w-full max-w-7xl flex-1 min-h-0 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <section className="flex min-h-0 min-w-0 flex-col rounded-2xl border border-border bg-surface p-3 sm:p-4">
           <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
             <div>
               <p className="font-mono text-xs uppercase tracking-wider text-brand">
@@ -145,9 +201,10 @@ export function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => voi
           seatedColor={seatedColor}
           autoJoinColor={autoJoinColor}
           autoJoinInFlight={autoJoinInFlight}
+          manualJoinColor={manualJoinColor}
           isSending={isSending}
           shareUrl={shareUrl}
-          onJoin={(color) => void runAction(() => session.joinGame(color))}
+          onJoin={(color) => void handleManualJoin(color)}
           onResign={() => void runAction(() => session.resign())}
         />
       </div>

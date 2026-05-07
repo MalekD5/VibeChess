@@ -22,6 +22,7 @@ interface GameSidebarProps {
   seatedColor: PlayerColor | null;
   autoJoinColor: PlayerColor | null;
   autoJoinInFlight: boolean;
+  manualJoinColor: PlayerColor | null;
   isSending: boolean;
   shareUrl: string;
   onJoin: (color: PlayerColor) => void;
@@ -34,6 +35,7 @@ export function GameSidebar({
   seatedColor,
   autoJoinColor,
   autoJoinInFlight,
+  manualJoinColor,
   isSending,
   shareUrl,
   onJoin,
@@ -57,7 +59,7 @@ export function GameSidebar({
   }
 
   return (
-    <aside className="grid content-start gap-4">
+    <aside className="grid min-h-0 content-start gap-4 overflow-y-auto">
       <Panel title="Session">
         <dl className="grid gap-3 text-sm">
           <InfoRow label="Game" value={formatShortGameId(session.gameId)} isMono />
@@ -105,6 +107,7 @@ export function GameSidebar({
                 state.status !== 'waiting' ||
                 state.players[color] !== null ||
                 seatedColor !== null ||
+                manualJoinColor !== null ||
                 autoJoinInFlight ||
                 isSending
               }
@@ -112,7 +115,9 @@ export function GameSidebar({
             >
               <span className="font-medium capitalize text-copy-primary">{color}</span>
               <span className="text-copy-muted">
-                {formatPlayerLabel(state, color, session.playerId)}
+                {manualJoinColor === color
+                  ? 'Joining...'
+                  : formatPlayerLabel(state, color, session.playerId)}
               </span>
             </button>
           ))}

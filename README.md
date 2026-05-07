@@ -16,6 +16,10 @@ The current trend of how **SDD** being used is by defining two important things:
 
 The key mindset shift is that you are now designing a system where AI generates code that satisfies a specification and continuously corrects itself against it.
 
+## Journey
+
+The next sections are mostly observations/description of how I implemented this project, what were the challenges and blockers, and final honest assesment of Spec Driven Development powered by AI.
+
 ## Methdology
 This project is setup from scratch, the only manual work that is being done by a Human is the `context/` folder and the `AGENTS.md` file, both found in the root of this project. 
 
@@ -114,6 +118,62 @@ update @context/progress-tracker.md to mark spec in progress,
 So I gave up on Codex, dropped all Codex changes, and re-executed the spec implementation using Claude Sonnet 4.6. Running Sonnet on low initially yielded results in the right direction, but it still produced a 400+ line component with some utility functions left inside it.
 
 I increased the model setting to high, and it produced a somewhat satisfactory result, though not what I wanted. For now, it is good enough to proceed.
+
+### Weak Plan Mode Capabilities
+Another issue with Codex is most of the times it jumps a head before actually understanding the problem at hand during the plan mode. 
+
+When given a specific senario it mainly just try to find the problem quickly instead of actually collecting information and context to see what might be causing it (see [Realtime Issues](#realtime-issues)).
+
+When prompted about the Realtime Issues problem, Codex ran for a grand total of 5 minutes on extra high.
+
+When it was prompted to Claude, it ran for 1 hour on Sonnet 4.6 High before it actually figured out the issue (seat assignment broadcast rejection)
+
+Both were on plan mode.
+
+## Realtime Issues
+During testing, I found out that the new structure that claude made completely broke the client-side handling for the realtime events.
+
+Attempting to fix this using Codex 5.5 first in medium and extra high did not work. Here is the prompted that was used on Codex:
+
+```bash
+Here is the situation:
+- I create a new game and pick white
+- I get invalid state message recieved
+
+However, when another player joins, it automatically assigns the black seat to the player
+
+I tested the inverse state where the creator of the game chooses black, and when another player joined it automatically assigned the player to white. for the second player I got this message: Seat request was sent, but no server state update arrived.
+
+for the creator of the game, he gets this messge: Invalid state message received
+```
+
+After manually checking, it appears that the server-side logic is correct. However, client is rejecting the broadcast event to confirm seat assignment. Problems happening at the frontend after the refactor was expected.
+
+I'm going to use Claude to see if the issue could be caught. I used the same prompt above I used on Codex.
+
+### Claude Findings
+Claude was able to figure out the issue and it is broken down into 2 parts:
+- The subscriber (`handleState` function) is suppose to use InboundMessage, not Message causing a response rejection
+- Timestamp type mismatch (likely secondary cause)
+
+and to Codex credit, it actually fixed other 3 issues that helped Claude to actually figure out where to look for to fix this rejection error.
+
+For a grand total of an hour of reasoning, the fix is actually 6 line change:
+![Subscriber Fix](/.github/images/subscriber-issue.png)
+![Timestamp Fix](/.github/images/timestamp-issue.png)
+
+However, after manual test the issue is still present, after giving Claude the error message with the object it fixed it.
+![Undefined Result Fix](/.github/images/undefined-result-issue.png)
+
+> The object is missing result entirely — the field is undefined, not null. The isResult guard only accepts null as the "no result yet" value - Claude
+
+that was the issue, so all of the issues that Codex fixed had nothing to do with the actual issue. The server omits result from the payload when the game is in waiting/active state, and the client's type guard treated undefined differently from null.
+
+## Multi-Modal
+
+One thing that is apparent to me is that you need to have multiple models at hand to be able to work on a project that uses Spec Driven Development. One model is simply not suffiencent to do any real work. 
+
+The only reason why I'm still sane is that I can switch between Codex and Claude depending on the task at hand.
 
 ## References
 - [Specification Driven Development](https://en.wikipedia.org/wiki/Specification-driven_development)

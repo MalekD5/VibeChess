@@ -84,7 +84,7 @@ function isPlayer(value: unknown): value is GameState['players']['white'] {
 }
 
 function isResult(value: unknown): value is GameState['result'] {
-  if (value === null) return true;
+  if (value === null || value === undefined) return true;
   if (typeof value !== 'object') return false;
 
   const obj = value as Record<string, unknown>;
@@ -99,10 +99,49 @@ function isResult(value: unknown): value is GameState['result'] {
   );
 }
 
-export function parseStateMessage(data: unknown): GameState | null {
-  if (typeof data !== 'object' || data === null) return null;
+function parseRealtimeObject(value: unknown): Record<string, unknown> | null {
+  let current = value;
 
-  const msg = data as Record<string, unknown>;
+  for (let depth = 0; depth < 4; depth += 1) {
+    if (typeof current === 'string') {
+      try {
+        current = JSON.parse(current) as unknown;
+        continue;
+      } catch {
+        return null;
+      }
+    }
+
+    if (typeof current !== 'object' || current === null) {
+      return null;
+    }
+
+    const obj = current as Record<string, unknown>;
+
+    if ('players' in obj || 'type' in obj || 'message' in obj) {
+      return obj;
+    }
+
+    if ('state' in obj) {
+      current = obj.state;
+      continue;
+    }
+
+    if ('data' in obj) {
+      current = obj.data;
+      continue;
+    }
+
+    return obj;
+  }
+
+  return null;
+}
+
+export function parseStateMessage(data: unknown): GameState | null {
+  const msg = parseRealtimeObject(data);
+  if (!msg) return null;
+
   const players = msg.players as Record<string, unknown> | undefined;
 
   if (
@@ -117,18 +156,18 @@ export function parseStateMessage(data: unknown): GameState | null {
     !isResult(msg.result) ||
     !Array.isArray(msg.moveHistory) ||
     !msg.moveHistory.every((move) => typeof move === 'string') ||
-    typeof msg.createdAt !== 'number' ||
-    typeof msg.updatedAt !== 'number'
+    (typeof msg.createdAt !== 'number' && typeof msg.createdAt !== 'string') ||
+    (typeof msg.updatedAt !== 'number' && typeof msg.updatedAt !== 'string')
   ) {
     return null;
   }
 
-  return data as GameState;
+  return msg as unknown as GameState;
 }
 
 function getMessageError(data: unknown): string {
-  if (typeof data !== 'object' || data === null) return 'Realtime error';
-  const msg = data as Record<string, unknown>;
+  const msg = parseRealtimeObject(data);
+  if (!msg) return 'Realtime error';
   return typeof msg.message === 'string' ? msg.message : 'Realtime error';
 }
 
@@ -144,6 +183,35 @@ export function useGameRealtime(input: UseGameRealtimeInput): GameRealtimeSessio
     useState<GameConnectionStatus>('connecting');
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<Ably.RealtimeChannel | null>(null);
+  const serverSubscriptionRef = useRef<Promise<void> | null>(null);
+
+  const ensureServerSubscription = useCallback(async (): Promise<void> => {
+    if (serverSubscriptionRef.current) {
+      return serverSubscriptionRef.current;
+    }
+
+    const subscription = (async () => {
+      const response = await fetch(
+        `/api/game/${encodeURIComponent(gameId)}/subscribe`,
+        { method: 'POST' },
+      );
+
+      if (!response.ok) {
+        throw new Error('Could not prepare game realtime subscription');
+      }
+    })();
+
+    serverSubscriptionRef.current = subscription;
+
+    try {
+      await subscription;
+    } catch (err) {
+      if (serverSubscriptionRef.current === subscription) {
+        serverSubscriptionRef.current = null;
+      }
+      throw err;
+    }
+  }, [gameId]);
 
   useEffect(() => {
     const realtime = new Ably.Realtime({
@@ -153,9 +221,12 @@ export function useGameRealtime(input: UseGameRealtimeInput): GameRealtimeSessio
 
     channelRef.current = nextChannel;
 
-    const handleState = (message: Ably.Message): void => {
+    const handleState = (message: Ably.InboundMessage): void => {
+      if (message.action && message.action !== 'message.create') return;
+
       const nextState = parseStateMessage(message.data);
       if (!nextState) {
+        console.error('[game-realtime] parseStateMessage failed. Raw data:', message.data);
         setError('Invalid state message received');
         return;
       }
@@ -179,12 +250,15 @@ export function useGameRealtime(input: UseGameRealtimeInput): GameRealtimeSessio
       setError(stateChange.reason?.message ?? 'Realtime connection failed');
     });
 
+    nextChannel.on('attached', () => setError(null));
+
     void nextChannel.subscribe('state', handleState).catch((err: unknown) => {
-      setConnectionStatus('failed');
       setError(getErrorMessage(err));
     });
     void nextChannel.subscribe('error', handleChannelError).catch((err: unknown) => {
-      setConnectionStatus('failed');
+      setError(getErrorMessage(err));
+    });
+    void ensureServerSubscription().catch((err: unknown) => {
       setError(getErrorMessage(err));
     });
 
@@ -197,7 +271,7 @@ export function useGameRealtime(input: UseGameRealtimeInput): GameRealtimeSessio
       void nextChannel.detach().catch(() => undefined);
       realtime.close();
     };
-  }, [channelName, gameId]);
+  }, [channelName, ensureServerSubscription, gameId]);
 
   const publishAction = useCallback(
     async (action: GameAction): Promise<void> => {
@@ -207,6 +281,7 @@ export function useGameRealtime(input: UseGameRealtimeInput): GameRealtimeSessio
       }
 
       try {
+        await ensureServerSubscription();
         await channel.publish('action', action);
         setError(null);
       } catch (err) {
@@ -215,7 +290,7 @@ export function useGameRealtime(input: UseGameRealtimeInput): GameRealtimeSessio
         throw err;
       }
     },
-    [],
+    [ensureServerSubscription],
   );
 
   const joinGame = useCallback(
