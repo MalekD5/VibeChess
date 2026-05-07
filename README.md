@@ -110,7 +110,11 @@ I attempted to fix this by referencing `code-standards.md` in the spec, prompt, 
 
 This modified prompt still did not yield a better result with Codex:
 ```bash
-read @AGENTS.md , then read @context/specs/08-component-cleanup.md spec. update @context/progress-tracker.md  to mark spec in progress, implement spec while respecting @context/code-standards.md  file organization, verify result against @context/code-standards.md , then update @context/progress-tracker.md to mark spec as completed
+read @AGENTS.md , then read @context/specs/08-component-cleanup.md spec. 
+update @context/progress-tracker.md to mark spec in progress,
+ implement spec while respecting @context/code-standards.md file organization, 
+ verify result against @context/code-standards.md, 
+ then update @context/progress-tracker.md to mark spec as completed
 ```
 
 So I gave up on Codex, dropped all Codex changes, and re-executed the spec implementation using Claude Sonnet 4.6. Running Sonnet on low initially yielded results in the right direction, but it still produced a 400+ line component with some utility functions left inside it.
