@@ -42,3 +42,5 @@ next-env.d.ts
 
 # ignored context files
 /context/current-issues.md
+
+/generated/prisma
