@@ -183,8 +183,13 @@ export function parseGameCreationRequestBody(rawBody: string): GameCreationReque
     return aiResult.data;
   }
 
-  if (!PlayerColorSchema.safeParse(bodyObject.playerColor).success) {
-    throw new Error('Player color is required for AI mode');
+  const playerColorResult = PlayerColorSchema.safeParse(bodyObject.playerColor);
+  if (!playerColorResult.success) {
+    throw new Error(
+      bodyObject.playerColor === undefined
+        ? 'Player color is required for AI mode'
+        : 'Invalid player color for AI mode',
+    );
   }
 
   throw new Error('AI difficulty is required for AI mode');
