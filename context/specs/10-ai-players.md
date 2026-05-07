@@ -1,4 +1,4 @@
-# Spec 09: AI Players
+# Spec 10: AI Players
 
 ## Summary
 
