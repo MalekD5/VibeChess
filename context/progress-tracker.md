@@ -12,6 +12,12 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
+- Fixed board sizing regression from height-based constraints.
+- Fixed board/sidebar height coupling after move history growth.
+- Fixed realtime state payload normalization.
+- Fixed server realtime subscription readiness before side picking.
+- Fixed realtime JSON-encoded side-pick message parsing.
+- Fixed human-vs-human side picking feedback and realtime error visibility.
 - Fixed chessboard dark-square parity so a1 renders dark.
 - Fixed client promotion detection so only pawns auto-promote.
 - Fixed share-link copy failure handling.

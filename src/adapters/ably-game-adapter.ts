@@ -3,7 +3,14 @@ import { getServerRealtime } from '@/lib/ably';
 import { gameManager } from '@/manager/game-manager';
 import type { GameAction, MoveInput, PlayerColor } from '@/types/game';
 
-const activeChannels = new Map<string, RealtimeChannel>();
+const globalForVibeChess = globalThis as typeof globalThis & {
+  __vibechessAblyActiveChannels?: Map<string, RealtimeChannel>;
+};
+
+const activeChannels =
+  globalForVibeChess.__vibechessAblyActiveChannels ?? new Map<string, RealtimeChannel>();
+
+globalForVibeChess.__vibechessAblyActiveChannels = activeChannels;
 
 function isPlayerColor(value: unknown): value is PlayerColor {
   return value === 'white' || value === 'black';
@@ -16,9 +23,26 @@ function isMoveInput(value: unknown): value is MoveInput {
   return typeof obj.from === 'string' && typeof obj.to === 'string';
 }
 
+function parseJsonObject(value: unknown): Record<string, unknown> | null {
+  if (typeof value === 'object' && value !== null) {
+    return value as Record<string, unknown>;
+  }
+
+  if (typeof value !== 'string') return null;
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return typeof parsed === 'object' && parsed !== null
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function parseAction(data: unknown): GameAction | null {
-  if (typeof data !== 'object' || data === null) return null;
-  const msg = data as Record<string, unknown>;
+  const msg = parseJsonObject(data);
+  if (!msg) return null;
   if (typeof msg.playerId !== 'string') return null;
 
   switch (msg.type) {
