@@ -2,7 +2,7 @@
 
 ## Summary
 
-Create `context/specs/09-ai-players.md` for a local, lightweight AI game mode. AI players behave as virtual seated players inside the existing Node runtime game manager/orchestrator flow, never as client-controlled state or a separate game system.
+Create `context/specs/10-ai-players.md` for a local, lightweight AI game mode. AI players behave as virtual seated players inside the existing Node runtime game manager/orchestrator flow, never as client-controlled state or a separate game system.
 
 ## Public Interfaces
 
@@ -46,7 +46,7 @@ Create `context/specs/09-ai-players.md` for a local, lightweight AI game mode. A
 
 ## Assumptions
 
-- This spec targets `context/specs/09-ai-players.md`.
+- This spec targets `context/specs/10-ai-players.md`.
 - AI is local and deterministic enough for testing; no external LLM/API dependency is introduced.
 - No database persistence changes are included in this spec.
 - No timers, ratings, analysis, or replay features are included.
