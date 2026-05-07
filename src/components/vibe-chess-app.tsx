@@ -155,6 +155,7 @@ export default function VibeChessApp() {
                   type="button"
                   onClick={() => setGameMode(mode)}
                   disabled={isLoading}
+                  aria-pressed={gameMode === mode}
                   className={`rounded-xl border px-3 py-2 text-sm font-medium capitalize transition disabled:cursor-not-allowed disabled:opacity-60 ${
                     gameMode === mode
                       ? mode === 'ai'
