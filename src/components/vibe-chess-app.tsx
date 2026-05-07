@@ -6,6 +6,8 @@ import {
 } from '@/hooks/game-realtime';
 import type { AiDifficulty, GameState, PlayerColor } from '@/types/game';
 import { parseJsonResponse } from '@/lib/api-client';
+import { signOut } from '@/lib/auth-client';
+import type { CurrentUser } from '@/lib/session';
 import { PlayableGameScreen } from '@/components/playable-game-screen';
 
 type GameMode = 'human' | 'ai';
@@ -29,7 +31,11 @@ interface JoinGameResponse {
   state: GameState;
 }
 
-export default function VibeChessApp() {
+interface VibeChessAppProps {
+  currentUser: CurrentUser;
+}
+
+export default function VibeChessApp({ currentUser }: VibeChessAppProps) {
   const [gameSetup, setGameSetup] = useState<GameSetup | null>(null);
   const [joinGameId, setJoinGameId] = useState('');
   const [gameMode, setGameMode] = useState<GameMode>('human');
@@ -116,6 +122,19 @@ export default function VibeChessApp() {
     await loadGame(nextGameId);
   }
 
+  async function handleSignOut(): Promise<void> {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await signOut();
+      window.location.reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not sign out');
+      setIsLoading(false);
+    }
+  }
+
   if (gameSetup) {
     return (
       <GameRealtimeProvider
@@ -137,10 +156,25 @@ export default function VibeChessApp() {
           <p className="font-mono text-xs uppercase tracking-wider text-brand">
             Realtime Chess
           </p>
-          <h1 className="text-3xl font-semibold text-copy-primary">VibeChess</h1>
-          <p className="text-sm text-copy-muted">
-            Start a game, share the ID, and play from the live server state.
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-semibold text-copy-primary">VibeChess</h1>
+              <p className="text-sm text-copy-muted">
+                Start a game, share the ID, and play from the live server state.
+              </p>
+              <p className="text-xs text-copy-faint">
+                Signed in as {currentUser.email}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              disabled={isLoading}
+              className="rounded-xl border border-border-subtle bg-subtle px-3 py-2 text-sm font-medium text-copy-secondary transition hover:border-brand hover:text-copy-primary disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
 
         <div className="mt-8 grid gap-3">

@@ -8,6 +8,7 @@ import {
   parseGameCreationRequestBody,
   type GameCreationRequest,
 } from '@/lib/game-schemas';
+import { getCurrentSession } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -79,6 +80,14 @@ async function createAiGame(
  * `{ "error": "subscription_failed", "message": "ABLY_API_KEY ..." }`.
  */
 export async function POST(req: Request): Promise<NextResponse> {
+  const session = await getCurrentSession();
+  if (!session) {
+    return NextResponse.json(
+      { error: 'unauthorized', message: 'Sign in to create a game.' },
+      { status: 401 },
+    );
+  }
+
   let setup: GameCreationRequest;
   try {
     setup = await parseGameSetup(req);

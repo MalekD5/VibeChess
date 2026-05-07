@@ -12,7 +12,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
-- Spec 11: Zod validation migration.
+- Spec 12: Auth user persistence.
 
 ## In Progress
 
