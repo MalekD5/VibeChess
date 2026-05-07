@@ -15,6 +15,7 @@ export interface LegalMove {
   san: string;
   promotion?: string;
   isCapture: boolean;
+  isEnPassant: boolean;
   isCheck: boolean;
   isPromotion: boolean;
 }
@@ -30,6 +31,7 @@ function toLegalMove(move: ChessMove): LegalMove {
     san: move.san,
     promotion: move.promotion,
     isCapture: move.isCapture(),
+    isEnPassant: move.isEnPassant(),
     isCheck: new Chess(move.after).isCheck(),
     isPromotion: move.isPromotion(),
   };

@@ -46,9 +46,13 @@ function stableMoveKey(move: LegalMove): string {
   return `${move.from}${move.to}${move.promotion ?? ''}${move.san}`;
 }
 
+function isCapturePriorityMove(move: LegalMove): boolean {
+  return move.isCapture || move.isEnPassant;
+}
+
 function selectMediumMove(moves: LegalMove[]): LegalMove | null {
   return (
-    randomMove(moves.filter((move) => move.isCapture)) ??
+    randomMove(moves.filter(isCapturePriorityMove)) ??
     randomMove(moves.filter((move) => move.isCheck)) ??
     randomMove(moves.filter((move) => move.isPromotion)) ??
     randomMove(moves)

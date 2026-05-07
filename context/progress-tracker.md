@@ -34,8 +34,9 @@ Update this file whenever the current phase, active feature, or implementation s
 - Prompt workflow guidance optimized.
 - Fixed duplicate move submissions from rapid board clicks.
 - spec 08 — Component Cleanup
-- spec 10 — AI Players
+- spec 10 — AI Players publish failure handling
 - Fixed AI follow-up trigger for human seats without explicit kind metadata.
+- Fixed medium AI en-passant capture prioritization.
 
 ## In Progress
 

@@ -19,6 +19,11 @@ export async function playAiTurnIfNeeded(
     playerId: player.id,
     move,
   });
-  await publishState(nextState);
+  try {
+    await publishState(nextState);
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    console.warn(`[AiTurn] failed to publish committed AI state: game=${state.gameId} reason=${reason}`);
+  }
   return nextState;
 }
