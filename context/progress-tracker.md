@@ -12,6 +12,9 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
+- Player history duplicate load-more request guard.
+- Spec 15: Player history row readability polish.
+- Spec 15: Player history page at `/history`; view transitions were not applicable for this non-navigating list page.
 - Spec 14: Vercel Labs refactor — game sidebar composition and accessibility slice.
 - Non-web Vercel skill references removed from workflow docs.
 - Vercel Labs skill requirements added to standing context files.
@@ -34,6 +37,8 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Architecture Decisions
 
+- Spec 15 uses `/history` for the signed-in player's private game history page.
+- Spec 15 displays AI opponents as `Vibe AI`.
 - Chess.js is wrapped in `src/engine/chess-engine.ts`; it never leaks into orchestrator or types layers.
 - `orchestrator` singleton is the only in-memory authority over active game state.
 - `dispatch` is the single function that writes back to the game map (enforces the "exactly one mutation function" invariant).

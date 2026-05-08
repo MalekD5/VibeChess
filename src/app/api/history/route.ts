@@ -1,31 +1,23 @@
 import { NextResponse } from 'next/server';
-import { listGameHistoryForUser } from '@/lib/game-history';
+import {
+  encodePlayerHistoryCursor,
+  getPlayerHistoryBatch,
+  parsePlayerHistoryCursor,
+} from '@/lib/game-history';
 import { getCurrentSession } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
-function getPlayerColor(
-  game: Awaited<ReturnType<typeof listGameHistoryForUser>>[number],
-  userId: string,
-) {
-  if (game.whitePlayerId === userId) return 'white';
-  if (game.blackPlayerId === userId) return 'black';
-  return null;
+function parseLimit(value: string | null): number {
+  if (!value) return 5;
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed)) return 5;
+
+  return Math.min(Math.max(parsed, 1), 5);
 }
 
-function getOpponentLabel(
-  game: Awaited<ReturnType<typeof listGameHistoryForUser>>[number],
-  userId: string,
-) {
-  const opponentId =
-    game.whitePlayerId === userId ? game.blackPlayerId : game.whitePlayerId;
-
-  if (!opponentId) return 'Unknown opponent';
-  if (opponentId.startsWith('ai:')) return 'AI';
-  return 'Human opponent';
-}
-
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: Request): Promise<NextResponse> {
   const session = await getCurrentSession();
   if (!session) {
     return NextResponse.json(
@@ -34,24 +26,17 @@ export async function GET(): Promise<NextResponse> {
     );
   }
 
-  const games = await listGameHistoryForUser(session.user.id);
+  const { searchParams } = new URL(request.url);
+  const data = await getPlayerHistoryBatch({
+    userId: session.user.id,
+    displayName: session.user.name,
+    cursor: parsePlayerHistoryCursor(searchParams.get('cursor')),
+    limit: parseLimit(searchParams.get('limit')),
+  });
 
   return NextResponse.json({
-    games: games.map((game) => ({
-      id: game.id,
-      opponentDisplayName: getOpponentLabel(game, session.user.id),
-      playerColor: getPlayerColor(game, session.user.id),
-      result: game.result,
-      resultReason: game.resultReason,
-      finalFen: game.finalFen,
-      plyCount: game.plyCount,
-      startedAt: game.startedAt.toISOString(),
-      endedAt: game.endedAt.toISOString(),
-      status: game.status,
-      lastSeq: game.lastSeq,
-      openingName: game.openingName,
-      openingEco: game.openingEco,
-    })),
+    games: data.games,
+    hasMore: data.hasMore,
+    nextCursor: encodePlayerHistoryCursor(data.nextCursor),
   });
 }
-
