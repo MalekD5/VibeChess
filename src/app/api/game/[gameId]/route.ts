@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { gameManager } from '@/manager/game-manager';
+import { getCurrentSession } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -30,6 +31,14 @@ interface RouteParams {
  * normalized into the documented error payloads.
  */
 export async function GET(_req: Request, { params }: RouteParams): Promise<NextResponse> {
+  const session = await getCurrentSession();
+  if (!session) {
+    return NextResponse.json(
+      { error: 'unauthorized', message: 'Sign in to join a game.' },
+      { status: 401 },
+    );
+  }
+
   const { gameId } = await params;
 
   try {
@@ -42,7 +51,7 @@ export async function GET(_req: Request, { params }: RouteParams): Promise<NextR
       );
     }
 
-    return NextResponse.json({ gameId, state });
+    return NextResponse.json({ gameId, state, playerId: session.user.id });
   } catch (err) {
     if (err instanceof Error && err.message.includes('not found')) {
       return NextResponse.json(

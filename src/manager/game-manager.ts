@@ -1,9 +1,10 @@
 import { orchestrator } from '@/orchestrator/game-orchestrator';
-import type { GameAction, GameState } from '@/types/game';
+import { persistCompletedGame } from '@/lib/game-history';
+import type { GameAction, GameMode, GameState } from '@/types/game';
 
 const queues = new Map<string, Promise<unknown>>();
 
-function enqueue<T>(gameId: string, task: () => T): Promise<T> {
+function enqueue<T>(gameId: string, task: () => T | Promise<T>): Promise<T> {
   const prev = queues.get(gameId) ?? Promise.resolve();
   const next = prev.then(task);
   // absorb errors so a rejected task never stalls subsequent enqueued tasks
@@ -24,9 +25,13 @@ class GameManager {
    * @returns A promise that resolves to the initial {@link GameState}.
    * @throws If the orchestrator rejects the creation (e.g. duplicate id).
    */
-  createGame(gameId: string): Promise<GameState> {
+  createGame(
+    gameId: string,
+    ownerId: string,
+    mode: GameMode = 'human',
+  ): Promise<GameState> {
     return enqueue(gameId, () => {
-      const snapshot = orchestrator.createGame(gameId);
+      const snapshot = orchestrator.createGame(gameId, ownerId, mode);
       console.log(`[GameManager] game created: ${gameId}`);
       return snapshot;
     });
@@ -70,9 +75,13 @@ class GameManager {
    */
   processEvent(gameId: string, action: GameAction): Promise<GameState> {
     console.log(`[GameManager] event received: game=${gameId} type=${action.type}`);
-    return enqueue(gameId, () => {
+    return enqueue(gameId, async () => {
       try {
         const snapshot = orchestrator.dispatch(gameId, action);
+        if (snapshot.status === 'finished') {
+          await persistCompletedGame(snapshot);
+          console.log(`[GameManager] completed game persisted: ${gameId}`);
+        }
         if (action.type === 'MAKE_MOVE') {
           console.log(`[GameManager] move applied: game=${gameId} move=${JSON.stringify(action.move)}`);
         } else {

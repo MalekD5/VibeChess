@@ -22,6 +22,7 @@ model User {
   updatedAt     DateTime
   sessions      Session[]
   accounts      Account[]
+  chessGames    ChessGame[]
 
   @@unique([email])
   @@map("user")
@@ -74,4 +75,33 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+model ChessGame {
+  id            String   @id
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  whitePlayerId String?
+  blackPlayerId String?
+  mode          String
+  status        String
+  result        String
+  resultReason  String
+  initialFen    String
+  finalFen      String
+  events        Json
+  pgn           String?
+  startedAt     DateTime
+  endedAt       DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastSeq       Int
+  plyCount      Int
+  openingName   String?
+  openingEco    String?
+
+  @@index([userId, endedAt])
+  @@index([whitePlayerId])
+  @@index([blackPlayerId])
+  @@map("chess_game")
 }

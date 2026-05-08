@@ -2,10 +2,15 @@ import { z } from 'zod';
 import {
   AI_DIFFICULTIES,
   GAME_OUTCOMES,
+  GAME_MODES,
   GAME_RESULT_REASONS,
   GAME_STATUSES,
+  HISTORY_RESULT_REASONS,
+  HISTORY_RESULTS,
   PLAYER_COLORS,
   PLAYER_KINDS,
+  STANDARD_INITIAL_FEN,
+  type CanonicalGameEvent,
   type GameAction,
   type GameState,
 } from '@/types/game';
@@ -16,6 +21,9 @@ export const PlayerKindSchema = z.enum(PLAYER_KINDS);
 export const GameStatusSchema = z.enum(GAME_STATUSES);
 export const GameResultReasonSchema = z.enum(GAME_RESULT_REASONS);
 export const GameOutcomeSchema = z.enum(GAME_OUTCOMES);
+export const GameModeSchema = z.enum(GAME_MODES);
+export const HistoryResultSchema = z.enum(HISTORY_RESULTS);
+export const HistoryResultReasonSchema = z.enum(HISTORY_RESULT_REASONS);
 
 export const MoveInputSchema = z.union([
   z.string(),
@@ -99,6 +107,37 @@ const GameResultSchema = z.object({
   reason: GameResultReasonSchema,
 });
 
+const BaseGameEventSchema = z.object({
+  id: z.string(),
+  gameId: z.string(),
+  seq: z.number().int().positive(),
+  actorId: z.string().optional(),
+  createdAt: z.string(),
+  schemaVersion: z.number().int().positive(),
+  idempotencyKey: z.string().optional(),
+});
+
+const MoveGameEventSchema = BaseGameEventSchema.extend({
+  type: z.literal('move'),
+  ply: z.number().int().positive(),
+  playerId: z.string(),
+  uci: z.string(),
+  san: z.string(),
+  fenAfter: z.string(),
+});
+
+const GameEndEventSchema = BaseGameEventSchema.extend({
+  type: z.literal('game.end'),
+  result: z.enum(['white', 'black', 'draw']),
+  reason: HistoryResultReasonSchema,
+  finalFen: z.string(),
+});
+
+const CanonicalGameEventSchema = z.discriminatedUnion('type', [
+  MoveGameEventSchema,
+  GameEndEventSchema,
+]) satisfies z.ZodType<CanonicalGameEvent>;
+
 const TimestampSchema = z.union([
   z.number(),
   z
@@ -109,15 +148,19 @@ const TimestampSchema = z.union([
 
 export const GameStateSchema = z.object({
   gameId: z.string(),
+  ownerId: z.string(),
   players: z.object({
     white: PlayerSchema.nullable(),
     black: PlayerSchema.nullable(),
   }),
+  mode: GameModeSchema,
   currentTurn: PlayerColorSchema,
+  initialFen: z.string(),
   fen: z.string(),
   status: GameStatusSchema,
   result: GameResultSchema.nullish().transform((result) => result ?? null),
   moveHistory: z.array(z.string()),
+  events: z.array(CanonicalGameEventSchema),
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,
 }) satisfies z.ZodType<GameState>;
@@ -246,6 +289,53 @@ export function parseGameStateMessage(data: unknown): GameState | null {
   const msg = parseRealtimePayloadObject(data);
   if (!msg) return null;
 
-  const result = GameStateSchema.safeParse(msg);
+  const result = GameStateSchema.safeParse(normalizeLegacyGameStateMessage(msg));
   return result.success ? result.data : null;
+}
+
+function normalizeLegacyGameStateMessage(msg: Record<string, unknown>): Record<string, unknown> {
+  if (!('gameId' in msg) || !('players' in msg) || !('fen' in msg)) {
+    return msg;
+  }
+
+  return {
+    ...msg,
+    ownerId: msg.ownerId ?? inferLegacyOwnerId(msg.players) ?? msg.gameId,
+    mode: msg.mode ?? inferLegacyMode(msg.players),
+    initialFen: msg.initialFen ?? STANDARD_INITIAL_FEN,
+    events: msg.events ?? [],
+  };
+}
+
+function inferLegacyOwnerId(players: unknown): string | null {
+  if (typeof players !== 'object' || players === null) return null;
+
+  const seats = players as Record<string, unknown>;
+  for (const color of PLAYER_COLORS) {
+    const player = seats[color];
+    if (typeof player !== 'object' || player === null) continue;
+    const id = (player as Record<string, unknown>).id;
+    const kind = (player as Record<string, unknown>).kind;
+    if (typeof id === 'string' && kind !== 'ai') {
+      return id;
+    }
+  }
+
+  return null;
+}
+
+function inferLegacyMode(players: unknown): 'human' | 'ai' {
+  if (typeof players !== 'object' || players === null) return 'human';
+
+  const seats = players as Record<string, unknown>;
+  return PLAYER_COLORS.some((color) => {
+    const player = seats[color];
+    return (
+      typeof player === 'object' &&
+      player !== null &&
+      (player as Record<string, unknown>).kind === 'ai'
+    );
+  })
+    ? 'ai'
+    : 'human';
 }

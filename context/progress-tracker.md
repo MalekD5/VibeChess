@@ -12,6 +12,8 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
+- Legacy realtime game-state compatibility fix after Spec 13.
+- Spec 13: Player game history.
 - Spec 12: Auth user persistence.
 
 ## In Progress

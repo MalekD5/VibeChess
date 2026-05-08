@@ -1,5 +1,15 @@
 import { validateAndApplyMove, getInitialFen } from '@/engine/chess-engine';
-import type { GameState, GameAction, Player, PlayerColor } from '@/types/game';
+import type {
+  CanonicalGameEvent,
+  GameAction,
+  GameEndEvent,
+  GameMode,
+  GameState,
+  HistoryResultReason,
+  MoveGameEvent,
+  Player,
+  PlayerColor,
+} from '@/types/game';
 
 function now(): number {
   return Date.now();
@@ -10,14 +20,27 @@ function oppositeColor(color: PlayerColor): PlayerColor {
 }
 
 export function createInitialState(gameId: string): GameState {
+  return createInitialStateForOwner(gameId, gameId);
+}
+
+export function createInitialStateForOwner(
+  gameId: string,
+  ownerId: string,
+  mode: GameMode = 'human',
+): GameState {
+  const initialFen = getInitialFen();
   return {
     gameId,
+    ownerId,
     players: { white: null, black: null },
+    mode,
     currentTurn: 'white',
-    fen: getInitialFen(),
+    initialFen,
+    fen: initialFen,
     status: 'waiting',
     result: null,
     moveHistory: [],
+    events: [],
     createdAt: now(),
     updatedAt: now(),
   };
@@ -42,6 +65,75 @@ function createPlayer(action: Extract<GameAction, { type: 'JOIN_GAME' }>): Playe
     color: action.color,
     kind: 'human',
   };
+}
+
+function nextSeq(events: CanonicalGameEvent[]): number {
+  return events.length + 1;
+}
+
+function eventTimestamp(timestamp: number): string {
+  return new Date(timestamp).toISOString();
+}
+
+function createMoveEvent(
+  state: GameState,
+  playerId: string,
+  san: string,
+  uci: string,
+  fenAfter: string,
+  timestamp: number,
+): MoveGameEvent {
+  const seq = nextSeq(state.events);
+  return {
+    id: `${state.gameId}:${seq}`,
+    gameId: state.gameId,
+    seq,
+    type: 'move',
+    actorId: playerId,
+    createdAt: eventTimestamp(timestamp),
+    schemaVersion: 1,
+    ply: state.moveHistory.length + 1,
+    playerId,
+    uci,
+    san,
+    fenAfter,
+  };
+}
+
+function toHistoryResult(outcome: NonNullable<GameState['result']>['outcome']): GameEndEvent['result'] {
+  if (outcome === 'white_won') return 'white';
+  if (outcome === 'black_won') return 'black';
+  return 'draw';
+}
+
+function toHistoryReason(reason: NonNullable<GameState['result']>['reason']): HistoryResultReason {
+  return reason === 'draw' ? 'unknown' : reason;
+}
+
+function appendGameEndEvent(
+  events: CanonicalGameEvent[],
+  gameId: string,
+  actorId: string | undefined,
+  result: NonNullable<GameState['result']>,
+  finalFen: string,
+  timestamp: number,
+): CanonicalGameEvent[] {
+  const seq = nextSeq(events);
+  return [
+    ...events,
+    {
+      id: `${gameId}:${seq}`,
+      gameId,
+      seq,
+      type: 'game.end',
+      actorId,
+      createdAt: eventTimestamp(timestamp),
+      schemaVersion: 1,
+      result: toHistoryResult(result.outcome),
+      reason: toHistoryReason(result.reason),
+      finalFen,
+    },
+  ];
 }
 
 export function reducer(state: GameState, action: GameAction): GameState {
@@ -109,15 +201,36 @@ export function reducer(state: GameState, action: GameAction): GameState {
           : result.isDraw
             ? { outcome: 'draw' as const, reason: 'draw' as const }
             : null;
+      const updatedAt = now();
+      const moveEvent = createMoveEvent(
+        state,
+        action.playerId,
+        result.san,
+        result.uci,
+        result.fen,
+        updatedAt,
+      );
+      const events =
+        gameResult === null
+          ? [...state.events, moveEvent]
+          : appendGameEndEvent(
+              [...state.events, moveEvent],
+              state.gameId,
+              action.playerId,
+              gameResult,
+              result.fen,
+              updatedAt,
+            );
 
       return {
         ...state,
         fen: result.fen,
         moveHistory: [...state.moveHistory, result.san],
+        events,
         currentTurn: oppositeColor(state.currentTurn),
         status: isTerminal ? 'finished' : 'active',
         result: gameResult,
-        updatedAt: now(),
+        updatedAt,
       };
     }
 
@@ -134,15 +247,28 @@ export function reducer(state: GameState, action: GameAction): GameState {
         throw new Error("Only a seated player can resign");
       }
 
+      const updatedAt = now();
+      const result = {
+        outcome:
+          state.players.white?.id === action.playerId
+            ? ('black_won' as const)
+            : ('white_won' as const),
+        reason: 'resignation' as const,
+      };
+
       return {
         ...state,
         status: 'finished',
-        result: {
-          outcome:
-            state.players.white?.id === action.playerId ? 'black_won' : 'white_won',
-          reason: 'resignation',
-        },
-        updatedAt: now(),
+        result,
+        events: appendGameEndEvent(
+          state.events,
+          state.gameId,
+          action.playerId,
+          result,
+          state.fen,
+          updatedAt,
+        ),
+        updatedAt,
       };
     }
 

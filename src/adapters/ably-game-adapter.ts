@@ -38,13 +38,19 @@ class AblyGameAdapter {
     await channel.subscribe('action', async (message) => {
       const action = parseClientGameActionMessage(message.data);
 
-      if (!action) {
-        console.warn(`[AblyGameAdapter] invalid message shape on game:${gameId}`);
-        await channel.publish('error', { message: 'Invalid message shape' });
-        return;
-      }
+        if (!action) {
+          console.warn(`[AblyGameAdapter] invalid message shape on game:${gameId}`);
+          await channel.publish('error', { message: 'Invalid message shape' });
+          return;
+        }
 
-      try {
+        if ('playerId' in action && message.clientId !== action.playerId) {
+          console.warn(`[AblyGameAdapter] rejected spoofed player id on game:${gameId}`);
+          await channel.publish('error', { message: 'Invalid player identity' });
+          return;
+        }
+
+        try {
         const currentState = gameManager.getGame(gameId);
         const actionPlayer =
           action.type === 'MAKE_MOVE' || action.type === 'RESIGN'
