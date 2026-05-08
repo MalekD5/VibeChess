@@ -18,6 +18,7 @@ export function AuthEntry() {
       });
     } catch {
       setError('Google sign-in could not be started.');
+    } finally {
       setIsLoading(false);
     }
   }
