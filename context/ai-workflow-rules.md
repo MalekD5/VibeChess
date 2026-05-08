@@ -4,6 +4,17 @@
 
 Build this project incrementally using a spec-driven workflow. Context files define what to build, how to build it, and what the current state of progress is. Always implement against these specs — do not infer or invent behavior from scratch.
 
+## Required Skill Usage
+
+Every new spec implementation must apply the relevant Vercel Labs skills before editing code:
+
+- Use `vercel-react-best-practices` for React components, Next.js pages/layouts, data loading, bundle size, server/client boundaries, and performance-sensitive changes.
+- Use `vercel-composition-patterns` for component refactors, reusable component APIs, provider design, and avoiding boolean prop proliferation.
+- Use `vercel-react-view-transitions` for route transitions, shared element animations, list identity animations, Suspense reveals, and UI state transitions.
+- Use `web-design-guidelines` for UI, accessibility, responsive layout, interaction design, and visual polish reviews.
+
+If a skill is not applicable to the spec, note that briefly in the implementation reasoning or progress update instead of forcing unrelated patterns.
+
 ## Scoping Rules
 
 - Work on one feature unit or subsystem at a time.
@@ -56,7 +67,8 @@ Progress state must reflect the actual state of the implementation, not the inte
 
 1. The current unit works end to end within its defined scope.
 2. No invariant defined in `architecture-context.md` was violated.
-3. `progress-tracker.md` reflects the completed work.
+3. Applicable Vercel Labs skill guidance was followed or explicitly marked non-applicable.
+4. `progress-tracker.md` reflects the completed work.
    - remove any unnecessary session context
    - update completed items (no need to mention past completed items, just the current item)
    - do not add any new sections
