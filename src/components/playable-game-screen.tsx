@@ -16,7 +16,7 @@ function formatStatus(state: { status: string; currentTurn: PlayerColor }): stri
 }
 
 function formatShortGameId(gameId: string): string {
-  return `${gameId.slice(0, 8)}...${gameId.slice(-4)}`;
+  return `${gameId.slice(0, 8)}…${gameId.slice(-4)}`;
 }
 
 export function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => void }) {
@@ -158,7 +158,9 @@ export function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => voi
   if (!state) {
     return (
       <main className="flex min-h-dvh flex-1 items-center justify-center px-4">
-        <p className="text-sm text-copy-muted">Connecting to game...</p>
+        <p aria-live="polite" className="text-sm text-copy-muted">
+          Connecting to game…
+        </p>
       </main>
     );
   }
@@ -179,11 +181,19 @@ export function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => voi
             <button
               type="button"
               onClick={onBackToStart}
-              className="rounded-xl border border-border-subtle bg-elevated px-3 py-2 text-sm text-copy-secondary transition hover:border-brand hover:text-copy-primary"
+              className="rounded-xl border border-border-subtle bg-elevated px-3 py-2 text-sm text-copy-secondary transition hover:border-brand hover:text-copy-primary focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:outline-none"
             >
-              New game
+              New Game
             </button>
           </div>
+          {actionError ? (
+            <p
+              aria-live="polite"
+              className="mb-4 rounded-xl border border-error/40 bg-error/10 px-3 py-2 text-sm text-error"
+            >
+              {actionError}
+            </p>
+          ) : null}
 
           <ChessBoard
             squares={boardSquares}
@@ -197,7 +207,9 @@ export function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => voi
 
         <GameSidebar
           state={state}
-          session={session}
+          gameId={session.gameId}
+          playerId={session.playerId}
+          connectionStatus={session.connectionStatus}
           seatedColor={seatedColor}
           autoJoinColor={autoJoinColor}
           autoJoinInFlight={autoJoinInFlight}

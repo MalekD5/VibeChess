@@ -12,6 +12,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
+- Spec 14: Vercel Labs refactor — game sidebar composition and accessibility slice.
 - Non-web Vercel skill references removed from workflow docs.
 - Vercel Labs skill requirements added to standing context files.
 - Spec 14: Vercel Labs refactor spec.
@@ -25,7 +26,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Spec 14: Vercel Labs refactor.
+- None
 
 ## Open Questions
 
