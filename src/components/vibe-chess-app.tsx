@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   GameRealtimeProvider,
@@ -168,14 +169,22 @@ export default function VibeChessApp({ currentUser }: VibeChessAppProps) {
                 Signed in as {currentUser.email}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={handleSignOut}
-              disabled={isLoading}
-              className="rounded-xl border border-border-subtle bg-subtle px-3 py-2 text-sm font-medium text-copy-secondary transition hover:border-brand hover:text-copy-primary disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Sign out
-            </button>
+            <div className="flex shrink-0 gap-2">
+              <Link
+                href="/history"
+                className="rounded-xl border border-border-subtle bg-subtle px-3 py-2 text-sm font-medium text-copy-secondary transition hover:border-brand hover:text-copy-primary focus-visible:border-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+              >
+                History
+              </Link>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                disabled={isLoading}
+                className="rounded-xl border border-border-subtle bg-subtle px-3 py-2 text-sm font-medium text-copy-secondary transition hover:border-brand hover:text-copy-primary focus-visible:border-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Sign out
+              </button>
+            </div>
           </div>
         </div>
 
