@@ -1,5 +1,7 @@
-import { createInitialState, reducer } from '@/orchestrator/reducer';
+import { createInitialStateForOwner, reducer } from '@/orchestrator/reducer';
+import { normalizeGameState } from '@/orchestrator/game-state-normalizer';
 import type { GameState, GameAction } from '@/types/game';
+import type { GameMode } from '@/types/game';
 
 class GameOrchestrator {
   private games: Map<string, GameState> = new Map();
@@ -8,11 +10,11 @@ class GameOrchestrator {
     return structuredClone(state);
   }
 
-  createGame(gameId: string): GameState {
+  createGame(gameId: string, ownerId: string, mode: GameMode = 'human'): GameState {
     if (this.games.has(gameId)) {
       throw new Error(`Game ${gameId} already exists`);
     }
-    const state = createInitialState(gameId);
+    const state = createInitialStateForOwner(gameId, ownerId, mode);
     this.games.set(gameId, state);
     return this.snapshot(state);
   }
@@ -22,7 +24,11 @@ class GameOrchestrator {
     if (!state) {
       throw new Error(`Game ${gameId} not found`);
     }
-    return this.snapshot(state);
+    const normalized = normalizeGameState(state);
+    if (normalized !== state) {
+      this.games.set(gameId, normalized);
+    }
+    return this.snapshot(normalized);
   }
 
   dispatch(gameId: string, action: GameAction): GameState {

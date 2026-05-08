@@ -26,8 +26,8 @@ async function parseGameSetup(req: Request): Promise<GameCreationRequest> {
 async function createAiGame(
   gameId: string,
   setup: AiGameSetup,
+  playerId: string,
 ): Promise<{ state: GameState; playerId: string }> {
-  const playerId = crypto.randomUUID();
   const aiColor = oppositeColor(setup.playerColor);
   const aiPlayerId = `ai:${gameId}`;
 
@@ -104,12 +104,12 @@ export async function POST(req: Request): Promise<NextResponse> {
   let gameCreated = false;
 
   try {
-    let state = await gameManager.createGame(gameId);
+    let state = await gameManager.createGame(gameId, session.user.id, setup.mode);
     gameCreated = true;
     await ablyGameAdapter.subscribe(gameId);
 
     if (setup.mode === 'ai') {
-      const aiGame = await createAiGame(gameId, setup);
+      const aiGame = await createAiGame(gameId, setup, session.user.id);
       state = aiGame.state;
       return NextResponse.json({
         gameId,
@@ -119,7 +119,12 @@ export async function POST(req: Request): Promise<NextResponse> {
       });
     }
 
-    return NextResponse.json({ gameId, channelName, state });
+    return NextResponse.json({
+      gameId,
+      channelName,
+      state,
+      playerId: session.user.id,
+    });
   } catch (err) {
     if (gameCreated) {
       try {

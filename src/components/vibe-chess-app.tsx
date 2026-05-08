@@ -29,6 +29,7 @@ interface CreateGameResponse {
 interface JoinGameResponse {
   gameId: string;
   state: GameState;
+  playerId: string;
 }
 
 interface VibeChessAppProps {
@@ -59,6 +60,7 @@ export default function VibeChessApp({ currentUser }: VibeChessAppProps) {
         gameId: data.gameId,
         channelName: `game:${data.gameId}`,
         state: data.state,
+        playerId: data.playerId,
       });
       setJoinGameId(data.gameId);
     } catch (err) {

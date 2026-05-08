@@ -1,9 +1,11 @@
 import { Chess, type Move as ChessMove, type Square } from 'chess.js';
-import type { MoveInput } from '@/types/game';
+import { STANDARD_INITIAL_FEN } from '@/types/game';
+import type { MoveInput, MoveGameEvent } from '@/types/game';
 
 export interface MoveResult {
   fen: string;
   san: string;
+  uci: string;
   isCheckmate: boolean;
   isStalemate: boolean;
   isDraw: boolean;
@@ -21,7 +23,7 @@ export interface LegalMove {
 }
 
 export function getInitialFen(): string {
-  return new Chess().fen();
+  return STANDARD_INITIAL_FEN;
 }
 
 function toLegalMove(move: ChessMove): LegalMove {
@@ -72,11 +74,48 @@ export function validateAndApplyMove(fen: string, move: MoveInput): MoveResult |
     return {
       fen: chess.fen(),
       san: result.san,
+      uci: `${result.from}${result.to}${result.promotion ?? ''}`,
       isCheckmate: chess.isCheckmate(),
       isStalemate: chess.isStalemate(),
       isDraw: chess.isDraw(),
     };
   } catch {
     return null;
+  }
+}
+
+export function buildMoveEventsFromSanHistory(
+  gameId: string,
+  initialFen: string,
+  moveHistory: string[],
+  players: { white?: { id: string } | null; black?: { id: string } | null },
+  createdAt: number,
+): MoveGameEvent[] {
+  try {
+    const chess = new Chess(initialFen);
+
+    return moveHistory.map((san, index) => {
+      const move = chess.move(san);
+      const color = index % 2 === 0 ? 'white' : 'black';
+      const playerId = players[color]?.id ?? color;
+      const seq = index + 1;
+
+      return {
+        id: `${gameId}:${seq}`,
+        gameId,
+        seq,
+        type: 'move',
+        actorId: playerId,
+        createdAt: new Date(createdAt).toISOString(),
+        schemaVersion: 1,
+        ply: seq,
+        playerId,
+        uci: `${move.from}${move.to}${move.promotion ?? ''}`,
+        san: move.san,
+        fenAfter: chess.fen(),
+      };
+    });
+  } catch {
+    return [];
   }
 }

@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { NextRequest, NextResponse } from 'next/server';
+import { getCurrentSession } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -19,7 +20,15 @@ export const runtime = 'nodejs';
  *   misconfigured `ABLY_API_KEY`).
  * @throws Never — errors are returned as JSON responses.
  */
-export function GET(req: NextRequest): NextResponse {
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const session = await getCurrentSession();
+  if (!session) {
+    return NextResponse.json(
+      { error: 'unauthorized', message: 'Sign in to connect to realtime.' },
+      { status: 401 },
+    );
+  }
+
   const apiKey = process.env.ABLY_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: 'ABLY_API_KEY is not set' }, { status: 500 });
@@ -41,12 +50,13 @@ export function GET(req: NextRequest): NextResponse {
     return NextResponse.json({ error: 'Malformed ABLY_API_KEY' }, { status: 500 });
   }
 
-  const clientId = crypto.randomUUID();
+  const nonce = crypto.randomUUID();
 
   const token = jwt.sign(
     {
       'x-ably-capability': JSON.stringify({ [`game:${gameId}`]: ['subscribe', 'publish'] }),
-      'x-ably-clientId': clientId,
+      'x-ably-clientId': session.user.id,
+      'vibechess-nonce': nonce,
     },
     keySecret,
     { expiresIn: '1h', keyid: keyName },
