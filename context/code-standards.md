@@ -20,6 +20,21 @@
 - Add `"use client"` only when the component needs browser interactivity, hooks, or real-time state.
 - Keep route handlers focused on a single responsibility.
 - Long-running work belongs in background tasks, not in request handlers.
+- Before editing Next.js code, read the relevant guide in `node_modules/next/dist/docs/` because this project uses Next.js 16.
+
+## React and Vercel Labs Standards
+
+- Follow `vercel-react-best-practices` for React and Next.js performance work.
+- Avoid render and request waterfalls by resolving independent async work in parallel.
+- Keep client component props compact and stable to avoid unnecessary serialization and rerenders.
+- Avoid broad barrel imports when direct imports keep bundles smaller.
+- Split hooks when independent subscriptions cause unrelated rerenders.
+- Derive render state during render when possible instead of syncing derived state with effects.
+- Use functional state updates for callbacks that depend on previous state.
+- Follow `vercel-composition-patterns` when refactoring or creating reusable components.
+- Prefer composition, children, and explicit variants over boolean prop combinations.
+- Use provider-backed or compound component patterns only when shared state or sibling coordination justifies them.
+- Keep provider components as the only layer that knows how their state is implemented.
 
 ## Styling
 

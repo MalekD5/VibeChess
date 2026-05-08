@@ -56,3 +56,23 @@ shadcn/ui on top of Tailwind. No custom design system. Components live in `compo
 
 for icons, you should use lucide-react.
 
+## Vercel Design and Motion Rules
+
+Every UI implementation or refactor must apply `web-design-guidelines` for accessibility, responsive layout, interaction quality, and visual polish.
+
+Use `vercel-react-view-transitions` for native view transitions. Add transitions only when they communicate continuity, hierarchy, list identity, Suspense reveal, or a meaningful UI state change.
+
+View transition requirements:
+
+- Follow the skill's implementation workflow before editing transition code.
+- Reuse the skill's CSS recipes in `globals.css`; do not invent custom animation recipes for the same patterns.
+- Include reduced-motion support.
+- Use `default="none"` unless a transition should intentionally respond to every React transition.
+- Do not call `document.startViewTransition` directly.
+
+Design requirements:
+
+- Preserve board readability and gameplay clarity over decorative motion.
+- Keep text inside its container across mobile and desktop viewports.
+- Avoid nested cards and decorative page-section cards.
+- Use accessible names, focus states, and keyboard paths for interactive controls.

@@ -12,6 +12,9 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
+- Non-web Vercel skill references removed from workflow docs.
+- Vercel Labs skill requirements added to standing context files.
+- Spec 14: Vercel Labs refactor spec.
 - Legacy realtime game-state compatibility fix after Spec 13.
 - Spec 13: Player game history.
 - Spec 12: Auth user persistence.
@@ -22,7 +25,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- None
+- Spec 14: Vercel Labs refactor.
 
 ## Open Questions
 
