@@ -71,11 +71,14 @@ export function PlayerHistoryList({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isPending, startTransition] = useTransition();
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const currentLoadingCursorRef = useRef<string | null>(null);
 
   const loadMore = useCallback(async () => {
-    if (!hasMore || !nextCursor || isLoadingMore) return;
+    if (!hasMore || !nextCursor) return;
+    if (currentLoadingCursorRef.current === nextCursor) return;
 
     setError(null);
+    currentLoadingCursorRef.current = nextCursor;
     setIsLoadingMore(true);
     const params = new URLSearchParams({ limit: '5', cursor: nextCursor });
 
@@ -93,9 +96,10 @@ export function PlayerHistoryList({
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load more games.');
     } finally {
+      currentLoadingCursorRef.current = null;
       setIsLoadingMore(false);
     }
-  }, [hasMore, isLoadingMore, nextCursor]);
+  }, [hasMore, nextCursor]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;

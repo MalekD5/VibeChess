@@ -12,6 +12,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
+- Player history duplicate load-more request guard.
 - Spec 15: Player history row readability polish.
 - Spec 15: Player history page at `/history`; view transitions were not applicable for this non-navigating list page.
 - Spec 14: Vercel Labs refactor — game sidebar composition and accessibility slice.
