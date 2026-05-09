@@ -12,6 +12,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
+- Zod schema audit follow-up fixes for timestamp parsing, action validation, and schema consistency.
 - Replaced deprecated Zod passthrough usage with Zod v4 loose object APIs.
 - Spec 16: Zod usage audit and standards.
 - Player history duplicate load-more request guard.
