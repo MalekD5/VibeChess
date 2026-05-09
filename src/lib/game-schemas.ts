@@ -25,32 +25,52 @@ export const GameModeSchema = z.enum(GAME_MODES);
 export const HistoryResultSchema = z.enum(HISTORY_RESULTS);
 export const HistoryResultReasonSchema = z.enum(HISTORY_RESULT_REASONS);
 
+const NonEmptyStringSchema = z.string().min(1);
+const ChessSquareSchema = z.string().regex(/^[a-h][1-8]$/);
+const PromotionPieceSchema = z.string().regex(/^[nbrqNBRQ]$/);
+
 export const MoveInputSchema = z.union([
-  z.string(),
+  NonEmptyStringSchema,
   z.object({
-    from: z.string(),
-    to: z.string(),
-    promotion: z.string().optional(),
+    from: ChessSquareSchema,
+    to: ChessSquareSchema,
+    promotion: PromotionPieceSchema.optional(),
   }),
 ]);
 
 export const JoinGameActionSchema = z.object({
   type: z.literal('JOIN_GAME'),
-  playerId: z.string(),
+  playerId: NonEmptyStringSchema,
   color: PlayerColorSchema,
   playerKind: PlayerKindSchema.optional(),
   aiDifficulty: AiDifficultySchema.optional(),
+}).superRefine((action, ctx) => {
+  if (action.playerKind === 'ai' && !action.aiDifficulty) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'aiDifficulty is required for AI players',
+      path: ['aiDifficulty'],
+    });
+  }
+
+  if (action.aiDifficulty && action.playerKind !== 'ai') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'aiDifficulty is only valid for AI players',
+      path: ['aiDifficulty'],
+    });
+  }
 });
 
 export const MakeMoveActionSchema = z.object({
   type: z.literal('MAKE_MOVE'),
-  playerId: z.string(),
+  playerId: NonEmptyStringSchema,
   move: MoveInputSchema,
 });
 
 export const ResignActionSchema = z.object({
   type: z.literal('RESIGN'),
-  playerId: z.string(),
+  playerId: NonEmptyStringSchema,
 });
 
 export const GameActionSchema = z.discriminatedUnion('type', [
@@ -60,12 +80,11 @@ export const GameActionSchema = z.discriminatedUnion('type', [
 ]);
 
 const ClientJoinGameActionSchema = z
-  .object({
+  .looseObject({
     type: z.literal('JOIN_GAME'),
-    playerId: z.string(),
+    playerId: NonEmptyStringSchema,
     color: PlayerColorSchema,
   })
-  .passthrough()
   .transform((action) => ({
     type: action.type,
     playerId: action.playerId,
@@ -74,12 +93,12 @@ const ClientJoinGameActionSchema = z
 
 const ClientGameActionSchema = z.union([
   ClientJoinGameActionSchema,
-  MakeMoveActionSchema.passthrough().transform((action) => ({
+  MakeMoveActionSchema.loose().transform((action) => ({
     type: action.type,
     playerId: action.playerId,
     move: action.move,
   })),
-  ResignActionSchema.passthrough().transform((action) => ({
+  ResignActionSchema.loose().transform((action) => ({
     type: action.type,
     playerId: action.playerId,
   })),
@@ -87,20 +106,20 @@ const ClientGameActionSchema = z.union([
 
 const HumanPlayerSchema = z
   .object({
-    id: z.string(),
+    id: NonEmptyStringSchema,
     color: PlayerColorSchema,
     kind: z.literal('human').optional().default('human'),
   })
   .transform((player) => ({ ...player, kind: 'human' as const }));
 
 const AiPlayerSchema = z.object({
-  id: z.string(),
+  id: NonEmptyStringSchema,
   color: PlayerColorSchema,
   kind: z.literal('ai'),
   aiDifficulty: AiDifficultySchema,
 });
 
-const PlayerSchema = z.union([AiPlayerSchema, HumanPlayerSchema]);
+const PlayerSchema = z.discriminatedUnion('kind', [AiPlayerSchema, HumanPlayerSchema]);
 
 const GameResultSchema = z.object({
   outcome: GameOutcomeSchema,
@@ -108,32 +127,32 @@ const GameResultSchema = z.object({
 });
 
 const BaseGameEventSchema = z.object({
-  id: z.string(),
-  gameId: z.string(),
+  id: NonEmptyStringSchema,
+  gameId: NonEmptyStringSchema,
   seq: z.number().int().positive(),
-  actorId: z.string().optional(),
-  createdAt: z.string(),
+  actorId: NonEmptyStringSchema.optional(),
+  createdAt: NonEmptyStringSchema,
   schemaVersion: z.number().int().positive(),
-  idempotencyKey: z.string().optional(),
+  idempotencyKey: NonEmptyStringSchema.optional(),
 });
 
 const MoveGameEventSchema = BaseGameEventSchema.extend({
   type: z.literal('move'),
   ply: z.number().int().positive(),
-  playerId: z.string(),
-  uci: z.string(),
-  san: z.string(),
-  fenAfter: z.string(),
+  playerId: NonEmptyStringSchema,
+  uci: NonEmptyStringSchema,
+  san: NonEmptyStringSchema,
+  fenAfter: NonEmptyStringSchema,
 });
 
 const GameEndEventSchema = BaseGameEventSchema.extend({
   type: z.literal('game.end'),
-  result: z.enum(['white', 'black', 'draw']),
+  result: HistoryResultSchema.exclude(['unknown']),
   reason: HistoryResultReasonSchema,
-  finalFen: z.string(),
+  finalFen: NonEmptyStringSchema,
 });
 
-const CanonicalGameEventSchema = z.discriminatedUnion('type', [
+export const CanonicalGameEventSchema = z.discriminatedUnion('type', [
   MoveGameEventSchema,
   GameEndEventSchema,
 ]) satisfies z.ZodType<CanonicalGameEvent>;
@@ -142,43 +161,43 @@ const TimestampSchema = z.union([
   z.number(),
   z
     .string()
+    .min(1)
     .transform((value) => Number(value))
-    .refine((value) => Number.isFinite(value)),
+    .refine((value) => Number.isFinite(value), { message: 'Invalid timestamp' }),
 ]);
 
 export const GameStateSchema = z.object({
-  gameId: z.string(),
-  ownerId: z.string(),
+  gameId: NonEmptyStringSchema,
+  ownerId: NonEmptyStringSchema,
   players: z.object({
     white: PlayerSchema.nullable(),
     black: PlayerSchema.nullable(),
   }),
   mode: GameModeSchema,
   currentTurn: PlayerColorSchema,
-  initialFen: z.string(),
-  fen: z.string(),
+  initialFen: NonEmptyStringSchema,
+  fen: NonEmptyStringSchema,
   status: GameStatusSchema,
   result: GameResultSchema.nullish().transform((result) => result ?? null),
-  moveHistory: z.array(z.string()),
+  moveHistory: z.array(NonEmptyStringSchema),
   events: z.array(CanonicalGameEventSchema),
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,
 }) satisfies z.ZodType<GameState>;
 
 export const HumanGameCreationRequestSchema = z
-  .object({
-    mode: z.literal('human').optional().default('human'),
+  .looseObject({
+    mode: z.literal('human').optional(),
   })
-  .passthrough()
   .transform(() => ({ mode: 'human' as const }));
 
-export const AiGameCreationRequestSchema = z
-  .object({
-    mode: z.literal('ai'),
-    playerColor: PlayerColorSchema,
-    aiDifficulty: AiDifficultySchema,
-  })
-  .passthrough();
+export const AiGameCreationRequestSchema = z.looseObject({
+  mode: z.literal('ai'),
+  playerColor: PlayerColorSchema,
+  aiDifficulty: AiDifficultySchema,
+}).transform(({ mode, playerColor, aiDifficulty }) => {
+  return { mode, playerColor, aiDifficulty };
+});
 
 export const GameCreationRequestSchema = z.union([
   AiGameCreationRequestSchema,
@@ -187,9 +206,7 @@ export const GameCreationRequestSchema = z.union([
 
 export type GameCreationRequest = z.infer<typeof GameCreationRequestSchema>;
 
-const JsonObjectSchema = z.object({}).passthrough();
-const GameCreationModeSchema = z.enum(['human', 'ai']);
-
+const JsonObjectSchema = z.looseObject({});
 function parseJsonBody(rawBody: string): unknown {
   try {
     return JSON.parse(rawBody) as unknown;
@@ -211,14 +228,19 @@ export function parseGameCreationRequestBody(rawBody: string): GameCreationReque
   }
 
   const bodyObject = objectResult.data;
-  const modeResult = GameCreationModeSchema.safeParse(bodyObject.mode ?? 'human');
+  const modeResult = GameModeSchema.safeParse(bodyObject.mode ?? 'human');
 
   if (!modeResult.success) {
     throw new Error('Game mode must be human or ai');
   }
 
   if (modeResult.data === 'human') {
-    return HumanGameCreationRequestSchema.parse(bodyObject);
+    const humanResult = HumanGameCreationRequestSchema.safeParse(bodyObject);
+    if (humanResult.success) {
+      return humanResult.data;
+    }
+
+    throw new Error('Game mode must be human or ai');
   }
 
   const aiResult = AiGameCreationRequestSchema.safeParse(bodyObject);
@@ -257,6 +279,8 @@ export function parseRealtimePayloadObject(value: unknown): Record<string, unkno
 
     const obj = current as Record<string, unknown>;
 
+    // Unwraps JSON-stringified or envelope-wrapped realtime payloads. Stop
+    // early when a known game payload key is present.
     if ('players' in obj || 'type' in obj || 'message' in obj) {
       return obj;
     }
