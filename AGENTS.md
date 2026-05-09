@@ -4,6 +4,12 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
+<!-- BEGIN:zod-agent-rules -->
+# This is NOT the Zod you know
+
+This project uses Zod v4.4.3. Your training data may describe older Zod APIs and type behavior. Before writing or changing Zod schemas, use the `zod` skill first, then confirm the exact current API and inferred types against the installed package in `node_modules/zod/` (especially the `.d.ts` files) instead of relying on memory.
+<!-- END:zod-agent-rules -->
+
 ## Application Building Context
 
 Read the following files in order before implementing or making any architectural decision:
