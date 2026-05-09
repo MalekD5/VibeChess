@@ -6,6 +6,7 @@
 - Fix root causes — do not layer workarounds.
 - Do not mix unrelated concerns in one component or route.
 - Respect the system boundaries defined in `architecture-context.md`.
+- Use `pnpm` for all package management and project scripts; do not use `npm` commands in this repository.
 
 ## TypeScript
 
