@@ -12,6 +12,8 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
+- Replaced deprecated Zod passthrough usage with Zod v4 loose object APIs.
+- Spec 16: Zod usage audit and standards.
 - Player history duplicate load-more request guard.
 - Spec 15: Player history row readability polish.
 - Spec 15: Player history page at `/history`; view transitions were not applicable for this non-navigating list page.
