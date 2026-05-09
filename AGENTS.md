@@ -12,6 +12,8 @@ This project uses Zod v4.4.3. Your training data may describe older Zod APIs and
 
 ## Application Building Context
 
+Use `pnpm` for all package management and project scripts. Do not use `npm` commands in this repository.
+
 Read the following files in order before implementing or making any architectural decision:
 
 1. `context/project-overview.md` — product definition, goals, features, and scope
