@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getLegalMoves } from '@/engine/chess-engine';
-import { gameManager } from '@/manager/game-manager';
+import { getActiveGameAccess } from '@/lib/active-game-access';
+import { getCurrentSession } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -16,8 +17,17 @@ export async function GET(
   req: NextRequest,
   { params }: RouteParams,
 ): Promise<NextResponse> {
+  const session = await getCurrentSession();
+  if (!session) {
+    return NextResponse.json(
+      { error: 'unauthorized', message: 'Sign in to view legal moves.', moves: [] },
+      { status: 401 },
+    );
+  }
+
   const { gameId } = await params;
   const from = req.nextUrl.searchParams.get('from');
+  const inviteToken = req.nextUrl.searchParams.get('invite');
 
   if (!isSquare(from)) {
     return NextResponse.json(
@@ -27,20 +37,32 @@ export async function GET(
   }
 
   try {
-    const state = gameManager.getGame(gameId);
-    return NextResponse.json({
+    const access = getActiveGameAccess({
       gameId,
-      from,
-      moves: getLegalMoves(state.fen, from),
+      userId: session.user.id,
+      inviteToken,
     });
-  } catch (err) {
-    if (err instanceof Error && err.message.includes('not found')) {
+
+    if (!access.ok) {
+      if (access.reason === 'not_found') {
+        return NextResponse.json(
+          { gameId, error: 'game_not_found', moves: [] },
+          { status: 404 },
+        );
+      }
+
       return NextResponse.json(
-        { gameId, error: 'game_not_found', moves: [] },
-        { status: 404 },
+        { gameId, error: 'forbidden', moves: [] },
+        { status: 403 },
       );
     }
 
+    return NextResponse.json({
+      gameId,
+      from,
+      moves: getLegalMoves(access.state.fen, from),
+    });
+  } catch (err) {
     console.error('[legal-moves] failed to read legal moves:', gameId, err);
     return NextResponse.json(
       { gameId, error: 'legal_moves_failed', moves: [] },

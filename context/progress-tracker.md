@@ -12,6 +12,8 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
+- Spec 18 invite-based Ably subscriber revocation follow-up.
+- Spec 18: Active Game Invite Access; view transitions were not applicable for this access-control and invite-link flow.
 - Spec 17: Basic history game review; view transitions were not applicable for this read-only review route.
 - Zod schema audit follow-up fixes for timestamp parsing, action validation, and schema consistency.
 - Replaced deprecated Zod passthrough usage with Zod v4 loose object APIs.

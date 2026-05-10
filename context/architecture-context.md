@@ -72,6 +72,8 @@ Game state can be reconstructed from:
 - Waiting human games require a separate server-issued invite token before a nonparticipant can load, subscribe to, or receive an Ably token for the game
 - Active and finished games are accessible only to the owner or seated players
 - Active-game invite tokens are in-memory access metadata, not part of `GameState` and not stored in Prisma
+- Ably JWTs issued through invite-only access carry a game-scoped revocation key and are revoked when the game stops waiting or is deleted
+- The Ably API key used for realtime auth must have revocable tokens enabled so invite-only JWTs can be invalidated immediately
 
 Next.js API routes are only for non-realtime commands (auth, game creation, history fetch)
 

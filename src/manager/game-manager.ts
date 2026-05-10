@@ -1,5 +1,6 @@
 import { orchestrator } from '@/orchestrator/game-orchestrator';
 import { persistCompletedGame } from '@/lib/game-history';
+import { revokeActiveGameInviteAccess } from '@/lib/active-game-invites';
 import type { GameAction, GameMode, GameState } from '@/types/game';
 
 const queues = new Map<string, Promise<unknown>>();
@@ -56,8 +57,9 @@ class GameManager {
    * @throws If the orchestrator rejects the deletion.
    */
   deleteGame(gameId: string): Promise<void> {
-    const result = enqueue(gameId, () => {
+    const result = enqueue(gameId, async () => {
       orchestrator.deleteGame(gameId);
+      await revokeActiveGameInviteAccess(gameId);
       console.log(`[GameManager] game deleted: ${gameId}`);
     });
     result.finally(() => queues.delete(gameId));
@@ -78,6 +80,9 @@ class GameManager {
     return enqueue(gameId, async () => {
       try {
         const snapshot = orchestrator.dispatch(gameId, action);
+        if (snapshot.status !== 'waiting') {
+          await revokeActiveGameInviteAccess(gameId);
+        }
         if (snapshot.status === 'finished') {
           await persistCompletedGame(snapshot);
           console.log(`[GameManager] completed game persisted: ${gameId}`);
