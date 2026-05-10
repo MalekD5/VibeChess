@@ -30,6 +30,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     );
   }
 
+  const apiKey = process.env.ABLY_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ error: 'ABLY_API_KEY is not set' }, { status: 500 });
+  }
+
   const gameId = req.nextUrl.searchParams.get('gameId');
   if (!gameId) {
     return NextResponse.json({ error: 'gameId query param is required' }, { status: 400 });
@@ -48,11 +53,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     }
 
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
-  }
-
-  const apiKey = process.env.ABLY_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: 'ABLY_API_KEY is not set' }, { status: 500 });
   }
 
   const colonIndex = apiKey.indexOf(':');
