@@ -12,6 +12,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
+- Spec 17: Basic history game review; view transitions were not applicable for this read-only review route.
 - Zod schema audit follow-up fixes for timestamp parsing, action validation, and schema consistency.
 - Replaced deprecated Zod passthrough usage with Zod v4 loose object APIs.
 - Spec 16: Zod usage audit and standards.
@@ -40,6 +41,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Architecture Decisions
 
+- Spec 17 uses `/history/[gameId]` for private completed-game move review.
 - Spec 15 uses `/history` for the signed-in player's private game history page.
 - Spec 15 displays AI opponents as `Vibe AI`.
 - Chess.js is wrapped in `src/engine/chess-engine.ts`; it never leaks into orchestrator or types layers.

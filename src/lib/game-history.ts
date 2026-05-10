@@ -1,18 +1,31 @@
 import { prisma } from '@/lib/prisma';
 import type { Prisma } from '../../generated/prisma/client';
-import type { PlayerHistoryCursor, PlayerHistoryPageData, PlayerHistoryRow } from '@/types/player-history';
+import type {
+  HistoryReviewGame,
+  HistoryReviewLoadResult,
+  HistoryReviewMove,
+  HistoryReviewPosition,
+  PlayerHistoryCursor,
+  PlayerHistoryPageData,
+  PlayerHistoryRow,
+} from '@/types/player-history';
 import type {
   CanonicalGameEvent,
+  GameMode,
+  HistoryGameStatus,
   GameState,
   HistoryResult,
   HistoryResultReason,
   PlayerColor,
 } from '@/types/game';
+import { GAME_MODES, HISTORY_GAME_STATUSES, HISTORY_RESULT_REASONS, HISTORY_RESULTS } from '@/types/game';
 
 const PLAYER_HISTORY_PAGE_SIZE = 5;
 const AI_PLAYER_LABEL = 'Vibe AI';
 const HUMAN_OPPONENT_LABEL = 'Human opponent';
 const UNKNOWN_PLAYER_LABEL = 'Unknown player';
+const UCI_MOVE_PATTERN = /^([a-h][1-8])([a-h][1-8])([qrbn])?$/i;
+const FEN_PIECES = new Set(['p', 'n', 'b', 'r', 'q', 'k', 'P', 'N', 'B', 'R', 'Q', 'K']);
 
 const historyDateFormatter = new Intl.DateTimeFormat('en', {
   dateStyle: 'medium',
@@ -133,6 +146,7 @@ export async function listGameHistoryForUser(userId: string) {
 }
 
 type CompactHistoryGame = Awaited<ReturnType<typeof listPlayerHistoryRows>>[number];
+type OwnedHistoryDetail = NonNullable<Awaited<ReturnType<typeof getOwnedGameHistoryDetail>>>;
 
 function getScopedCompletedHistoryWhere(userId: string): Prisma.ChessGameWhereInput {
   return {
@@ -199,6 +213,174 @@ function getWinnerDisplayName(
 
 function formatHistoryDate(date: Date): string {
   return historyDateFormatter.format(date);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function readString(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+function readInteger(value: unknown): number | null {
+  return typeof value === 'number' && Number.isInteger(value) ? value : null;
+}
+
+function toStoredHistoryResult(value: string): HistoryResult | null {
+  return HISTORY_RESULTS.includes(value as HistoryResult) ? (value as HistoryResult) : null;
+}
+
+function toStoredHistoryResultReason(value: string): HistoryResultReason | null {
+  return HISTORY_RESULT_REASONS.includes(value as HistoryResultReason) ? (value as HistoryResultReason) : null;
+}
+
+function toStoredHistoryStatus(value: string): HistoryGameStatus | null {
+  return HISTORY_GAME_STATUSES.includes(value as HistoryGameStatus) ? (value as HistoryGameStatus) : null;
+}
+
+function toStoredGameMode(value: string): GameMode | null {
+  return GAME_MODES.includes(value as GameMode) ? (value as GameMode) : null;
+}
+
+function isValidFenPlacement(fen: string): boolean {
+  const placement = fen.split(' ')[0];
+  if (!placement) return false;
+
+  const ranks = placement.split('/');
+  if (ranks.length !== 8) return false;
+
+  for (const rank of ranks) {
+    let fileCount = 0;
+
+    for (const token of rank) {
+      const emptyCount = Number(token);
+      if (Number.isInteger(emptyCount) && emptyCount > 0) {
+        fileCount += emptyCount;
+        continue;
+      }
+
+      if (!FEN_PIECES.has(token)) return false;
+      fileCount += 1;
+    }
+
+    if (fileCount !== 8) return false;
+  }
+
+  return true;
+}
+
+function parseUciSquares(uci: string): Pick<HistoryReviewMove, 'from' | 'to'> {
+  const match = UCI_MOVE_PATTERN.exec(uci);
+  if (!match) return { from: null, to: null };
+
+  return {
+    from: match[1].toLowerCase(),
+    to: match[2].toLowerCase(),
+  };
+}
+
+function buildHistoryReviewGame(
+  game: OwnedHistoryDetail,
+  currentUserId: string,
+  currentUserName: string,
+): HistoryReviewGame | null {
+  const mode = toStoredGameMode(game.mode);
+  const status = toStoredHistoryStatus(game.status);
+  const result = toStoredHistoryResult(game.result);
+  const resultReason = toStoredHistoryResultReason(game.resultReason);
+
+  if (!mode || !status || !result || !resultReason) return null;
+  if (!isValidFenPlacement(game.initialFen) || !isValidFenPlacement(game.finalFen)) return null;
+  if (!Array.isArray(game.events)) return null;
+
+  const moves: HistoryReviewMove[] = [];
+  const positions: HistoryReviewPosition[] = [{ ply: 0, fen: game.initialFen, move: null }];
+  let terminalFinalFen: string | null = null;
+
+  for (const [index, rawEvent] of game.events.entries()) {
+    if (!isRecord(rawEvent)) return null;
+
+    const seq = readInteger(rawEvent.seq);
+    const type = readString(rawEvent.type);
+    if (seq !== index + 1) return null;
+
+    if (type === 'move') {
+      if (terminalFinalFen) return null;
+
+      const ply = readInteger(rawEvent.ply);
+      const playerId = readString(rawEvent.playerId);
+      const san = readString(rawEvent.san);
+      const uci = readString(rawEvent.uci);
+      const fenAfter = readString(rawEvent.fenAfter);
+      const expectedPly = moves.length + 1;
+
+      if (ply !== expectedPly || !playerId || !san || !uci || !fenAfter) return null;
+      if (!isValidFenPlacement(fenAfter)) return null;
+
+      const move: HistoryReviewMove = {
+        ply,
+        moveNumber: Math.ceil(ply / 2),
+        color: ply % 2 === 1 ? 'white' : 'black',
+        playerId,
+        san,
+        uci,
+        ...parseUciSquares(uci),
+        fenAfter,
+      };
+
+      moves.push(move);
+      positions.push({ ply, fen: fenAfter, move });
+      continue;
+    }
+
+    if (type === 'game.end') {
+      if (index !== game.events.length - 1 || terminalFinalFen) return null;
+
+      const eventResult = readString(rawEvent.result);
+      const eventReason = readString(rawEvent.reason);
+      const finalFen = readString(rawEvent.finalFen);
+
+      if (!eventResult || !eventReason || !finalFen) return null;
+      if (!toStoredHistoryResult(eventResult) || !toStoredHistoryResultReason(eventReason)) return null;
+      if (!isValidFenPlacement(finalFen)) return null;
+
+      terminalFinalFen = finalFen;
+      continue;
+    }
+
+    return null;
+  }
+
+  const effectiveFinalFen = terminalFinalFen ?? game.finalFen;
+  const finalPositionFen = moves.at(-1)?.fenAfter ?? game.initialFen;
+
+  if (effectiveFinalFen !== game.finalFen) return null;
+  if (finalPositionFen !== effectiveFinalFen) return null;
+  if (game.plyCount !== moves.length) return null;
+  if (game.lastSeq !== game.events.length) return null;
+
+  return {
+    id: game.id,
+    whitePlayerDisplayName: getPlayerDisplayName(game.whitePlayerId, currentUserId, currentUserName),
+    blackPlayerDisplayName: getPlayerDisplayName(game.blackPlayerId, currentUserId, currentUserName),
+    playerColor: getPlayerColorForHistory(game, currentUserId),
+    mode,
+    status,
+    result,
+    resultReason,
+    initialFen: game.initialFen,
+    finalFen: game.finalFen,
+    startedAt: game.startedAt.toISOString(),
+    endedAt: game.endedAt.toISOString(),
+    displayEndedAt: formatHistoryDate(game.endedAt),
+    plyCount: game.plyCount,
+    pgn: game.pgn,
+    openingName: game.openingName,
+    openingEco: game.openingEco,
+    moves,
+    positions,
+  };
 }
 
 function toPlayerHistoryRow(
@@ -378,4 +560,22 @@ export async function getOwnedGameHistoryDetail(gameId: string, userId: string) 
       OR: [{ userId }, { whitePlayerId: userId }, { blackPlayerId: userId }],
     },
   });
+}
+
+export async function getOwnedGameHistoryReview({
+  gameId,
+  userId,
+  displayName,
+}: {
+  gameId: string;
+  userId: string;
+  displayName: string;
+}): Promise<HistoryReviewLoadResult> {
+  const game = await getOwnedGameHistoryDetail(gameId, userId);
+  if (!game) return { status: 'not-found' };
+
+  const review = buildHistoryReviewGame(game, userId, displayName);
+  if (!review) return { status: 'unavailable' };
+
+  return { status: 'available', review };
 }

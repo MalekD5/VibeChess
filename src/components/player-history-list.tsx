@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import { PlayerHistoryBoardPreview } from '@/components/player-history-board-preview';
 import type { PlayerHistoryRow } from '@/types/player-history';
 
@@ -35,22 +37,34 @@ function HistoryRow({ game }: { game: PlayerHistoryRow }) {
   const matchup = `${game.whitePlayerDisplayName} vs ${game.blackPlayerDisplayName}`;
 
   return (
-    <li className="grid gap-4 border-t border-border bg-surface px-4 py-5 first:border-t-0 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-center sm:px-5">
-      <PlayerHistoryBoardPreview finalFen={game.finalFen} />
-      <div className="min-w-0 space-y-3">
-        <div className="min-w-0 space-y-1">
-          <h3 className="truncate text-lg font-semibold text-copy-primary">
-            {matchup}
-          </h3>
-          <p className="text-sm text-copy-muted">{game.displayDate}</p>
-        </div>
-        <dl className="flex flex-wrap items-center gap-2 text-sm">
-          <div className="min-w-0 rounded-xl border border-brand bg-accent-dim px-3 py-2">
-            <dt className="sr-only">Result</dt>
-            <dd className="font-semibold text-brand">{formatResultDescription(game)}</dd>
+    <li className="border-t border-border bg-surface first:border-t-0">
+      <Link
+        href={`/history/${encodeURIComponent(game.id)}`}
+        prefetch={false}
+        className="grid gap-4 px-4 py-5 transition-colors hover:bg-accent-dim focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-center sm:px-5"
+      >
+        <PlayerHistoryBoardPreview finalFen={game.finalFen} />
+        <div className="min-w-0 space-y-3">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <h3 className="truncate text-lg font-semibold text-copy-primary">
+                {matchup}
+              </h3>
+              <p className="text-sm text-copy-muted">{game.displayDate}</p>
+            </div>
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-border bg-elevated px-3 py-2 text-sm font-medium text-copy-secondary">
+              Review
+              <ArrowRight aria-hidden="true" size={16} />
+            </span>
           </div>
-        </dl>
-      </div>
+          <dl className="flex flex-wrap items-center gap-2 text-sm">
+            <div className="min-w-0 rounded-xl border border-brand bg-accent-dim px-3 py-2">
+              <dt className="sr-only">Result</dt>
+              <dd className="font-semibold text-brand">{formatResultDescription(game)}</dd>
+            </div>
+          </dl>
+        </div>
+      </Link>
     </li>
   );
 }
@@ -132,7 +146,7 @@ export function PlayerHistoryList({
   return (
     <section aria-labelledby="history-list-title" className="overflow-hidden rounded-2xl border border-border bg-surface">
       <div className="border-b border-border px-4 py-3 sm:px-5">
-        <h2 id="history-list-title" className="text-sm font-semibold uppercase tracking-wide text-copy-muted">
+        <h2 id="history-list-title" className="text-sm font-semibold uppercase text-copy-muted">
           Completed Games
         </h2>
       </div>
