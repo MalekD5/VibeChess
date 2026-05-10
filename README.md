@@ -132,6 +132,14 @@ When it was prompted to Claude, it ran for 1 hour on Sonnet 4.6 High before it a
 
 Both were on plan mode.
 
+### `@` file limitation
+
+Another annoying problem with Codex that it limits how many files it displays when using the `@` notation to just 7 files (at least in vscode, not sure about the Codex Desktop App)
+
+The main bottleneck comes from the .agents folder, where we have multiple `AGENTS.md` files, and because so far because I have more than 7 skills installed, the AGENTS.md file in the root directory of this project basically disappears. Furthermore, the extension does not have a scroll for the files that you can select and only limits to the top 7 result it becomes impossible to refer to the root file using the `@` notation.
+
+The workaround is to tell Codex to `use the root AGENTS.md file`
+
 ## Realtime Issues
 During testing, I found out that the new structure that claude made completely broke the client-side handling for the realtime events.
 
@@ -176,6 +184,15 @@ that was the issue, so all of the issues that Codex fixed had nothing to do with
 One thing that is apparent to me is that you need to have multiple models at hand to be able to work on a project that uses Spec Driven Development. One model is simply not suffiencent to do any real work. 
 
 The only reason why I'm still sane is that I can switch between Codex and Claude depending on the task at hand.
+
+## Git Branch Methodology Change
+
+I have decided to move from purely working on `development` branch to a per-spec branch. 
+
+I will utilize git branch 'folders':
+ - `spec/*` branch name convention for the spec itself.
+ - `issue/*` for bugs and issues that arises after the spec branch was merged.
+ - `refactor/*`: configs, deps, maintenance, code structure, documentation, cleanups.
 
 ## References
 - [Specification Driven Development](https://en.wikipedia.org/wiki/Specification-driven_development)
