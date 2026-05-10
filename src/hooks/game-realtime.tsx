@@ -16,7 +16,7 @@ import {
   parseGameStateMessage,
   parseRealtimePayloadObject,
 } from '@/lib/game-schemas';
-import { appendInviteParam } from '@/lib/url-utils';
+
 
 export type GameConnectionStatus =
   | 'idle'
@@ -123,8 +123,11 @@ export function useGameRealtime(input: UseGameRealtimeInput): GameRealtimeSessio
 
     const subscription = (async () => {
       const response = await fetch(
-        appendInviteParam(`/api/game/${encodeURIComponent(gameId)}/subscribe`, inviteToken),
-        { method: 'POST' },
+        `/api/game/${encodeURIComponent(gameId)}/subscribe`,
+        {
+          method: 'POST',
+          ...(inviteToken ? { headers: { 'x-invite-token': inviteToken } } : {}),
+        },
       );
 
       if (!response.ok) {
@@ -146,10 +149,8 @@ export function useGameRealtime(input: UseGameRealtimeInput): GameRealtimeSessio
 
   useEffect(() => {
     const realtime = new Ably.Realtime({
-      authUrl: appendInviteParam(
-        `/api/ably/auth?gameId=${encodeURIComponent(gameId)}`,
-        inviteToken,
-      ),
+      authUrl: `/api/ably/auth?gameId=${encodeURIComponent(gameId)}`,
+      ...(inviteToken ? { authHeaders: { 'x-invite-token': inviteToken } } : {}),
     });
     const nextChannel = realtime.channels.get(channelName);
 

@@ -78,11 +78,9 @@ export default function VibeChessApp({ currentUser }: VibeChessAppProps) {
       setError(null);
 
       try {
-        const inviteQuery = inviteToken
-          ? `?invite=${encodeURIComponent(inviteToken)}`
-          : '';
         const response = await fetch(
-          `/api/game/${encodeURIComponent(nextGameId)}${inviteQuery}`,
+          `/api/game/${encodeURIComponent(nextGameId)}`,
+          inviteToken ? { headers: { 'x-invite-token': inviteToken } } : undefined,
         );
         const data = await parseJsonResponse<JoinGameResponse>(
           response,

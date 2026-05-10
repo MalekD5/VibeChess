@@ -5,7 +5,6 @@ import type { GameState, MoveInput, PlayerColor } from '@/types/game';
 import type { BoardSquare } from '@/components/chess-board';
 import { getPromotion } from '@/components/chess-board';
 import { parseJsonResponse } from '@/lib/api-client';
-import { appendInviteParam } from '@/lib/url-utils';
 
 interface LegalMovesResponse {
   moves: { from: string; to: string; san: string; promotion?: string }[];
@@ -58,10 +57,8 @@ export function useBoardInteraction({
 
   async function fetchLegalTargets(from: string): Promise<Set<string>> {
     const response = await fetch(
-      appendInviteParam(
-        `/api/game/${encodeURIComponent(gameId)}/legal-moves?from=${encodeURIComponent(from)}`,
-        inviteToken,
-      ),
+      `/api/game/${encodeURIComponent(gameId)}/legal-moves?from=${encodeURIComponent(from)}`,
+      inviteToken ? { headers: { 'x-invite-token': inviteToken } } : undefined,
     );
     const data = await parseJsonResponse<LegalMovesResponse>(
       response,

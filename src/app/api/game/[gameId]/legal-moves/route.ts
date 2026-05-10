@@ -27,7 +27,7 @@ export async function GET(
 
   const { gameId } = await params;
   const from = req.nextUrl.searchParams.get('from');
-  const inviteToken = req.nextUrl.searchParams.get('invite');
+  const inviteToken = req.headers.get('x-invite-token');
 
   if (!isSquare(from)) {
     return NextResponse.json(

@@ -40,7 +40,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'gameId query param is required' }, { status: 400 });
   }
 
-  const inviteToken = req.nextUrl.searchParams.get('invite');
+  const inviteToken = req.headers.get('x-invite-token');
   const access = await getActiveGameAccess({
     gameId,
     userId: session.user.id,
