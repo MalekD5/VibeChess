@@ -148,6 +148,10 @@ export function useGameRealtime(input: UseGameRealtimeInput): GameRealtimeSessio
   }, [gameId, inviteToken]);
 
   useEffect(() => {
+    serverSubscriptionRef.current = null;
+  }, [gameId, inviteToken]);
+
+  useEffect(() => {
     const realtime = new Ably.Realtime({
       authUrl: `/api/ably/auth?gameId=${encodeURIComponent(gameId)}`,
       ...(inviteToken ? { authHeaders: { 'x-invite-token': inviteToken } } : {}),
