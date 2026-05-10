@@ -33,6 +33,14 @@
 
 This does NOT go to DB on every update
 
+### Active Game Invite Metadata
+
+- Lives in PostgreSQL via Prisma in `active_game_invite`
+- Stores game-to-invite authorization metadata and revocation state
+- Stores invite token hashes, not raw invite tokens
+- Is queried during active-game access checks and updated when invite access is revoked
+- Is not part of `GameState` and is not the source of truth for chess state
+
 ### Persistent Game Record
 
 Stored in PostgreSQL via Prisma.
@@ -71,7 +79,7 @@ Game state can be reconstructed from:
 - `gameId` is an identifier, not an authorization secret
 - Waiting human games require a separate server-issued invite token before a nonparticipant can load, subscribe to, or receive an Ably token for the game
 - Active and finished games are accessible only to the owner or seated players
-- Active-game invite tokens are in-memory access metadata, not part of `GameState` and not stored in Prisma
+- Active-game invite metadata is stored durably in Prisma, separate from `GameState`; raw invite tokens are not stored
 - Ably JWTs issued through invite-only access carry a game-scoped revocation key and are revoked when the game stops waiting or is deleted
 - The Ably API key used for realtime auth must have revocable tokens enabled so invite-only JWTs can be invalidated immediately
 

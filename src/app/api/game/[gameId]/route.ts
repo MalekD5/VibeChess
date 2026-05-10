@@ -43,7 +43,7 @@ export async function GET(req: NextRequest, { params }: RouteParams): Promise<Ne
   const inviteToken = req.nextUrl.searchParams.get('invite');
 
   try {
-    const access = getActiveGameAccess({
+    const access = await getActiveGameAccess({
       gameId,
       userId: session.user.id,
       inviteToken,

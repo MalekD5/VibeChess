@@ -21,7 +21,7 @@ export async function POST(req: NextRequest, { params }: RouteParams): Promise<N
   const { gameId } = await params;
   const inviteToken = req.nextUrl.searchParams.get('invite');
 
-  const access = getActiveGameAccess({
+  const access = await getActiveGameAccess({
     gameId,
     userId: session.user.id,
     inviteToken,

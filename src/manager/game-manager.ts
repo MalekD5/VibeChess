@@ -79,8 +79,9 @@ class GameManager {
     console.log(`[GameManager] event received: game=${gameId} type=${action.type}`);
     return enqueue(gameId, async () => {
       try {
+        const previousStatus = orchestrator.getState(gameId).status;
         const snapshot = orchestrator.dispatch(gameId, action);
-        if (snapshot.status !== 'waiting') {
+        if (previousStatus === 'waiting' && snapshot.status !== 'waiting') {
           await revokeActiveGameInviteAccess(gameId);
         }
         if (snapshot.status === 'finished') {

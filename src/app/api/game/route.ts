@@ -112,7 +112,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     let state = await gameManager.createGame(gameId, session.user.id, setup.mode);
     gameCreated = true;
     if (setup.mode === 'human') {
-      inviteToken = createActiveGameInvite(gameId);
+      inviteToken = await createActiveGameInvite(gameId);
     }
     await ablyGameAdapter.subscribe(gameId);
 
@@ -136,7 +136,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     });
   } catch (err) {
     if (inviteToken) {
-      revokeActiveGameInvite(gameId);
+      await revokeActiveGameInvite(gameId);
     }
 
     if (gameCreated) {

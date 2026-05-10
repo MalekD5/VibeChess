@@ -27,11 +27,11 @@ function isParticipantOrOwner(state: GameState, userId: string): boolean {
   );
 }
 
-export function getActiveGameAccess({
+export async function getActiveGameAccess({
   gameId,
   userId,
   inviteToken,
-}: ActiveGameAccessInput): ActiveGameAccess {
+}: ActiveGameAccessInput): Promise<ActiveGameAccess> {
   let state: GameState;
 
   try {
@@ -48,7 +48,7 @@ export function getActiveGameAccess({
     return { ok: true, state, access: 'participant' };
   }
 
-  if (state.status === 'waiting' && hasActiveGameInvite(gameId, inviteToken)) {
+  if (state.status === 'waiting' && (await hasActiveGameInvite(gameId, inviteToken))) {
     return { ok: true, state, access: 'invite' };
   }
 

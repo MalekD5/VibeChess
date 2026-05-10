@@ -58,11 +58,12 @@ For `active` and `finished` games, invite tokens must not authorize non-particip
 ### Invite Token
 
 - Generate an opaque random invite token when creating a human game.
-- Store the token server-side with the same in-memory lifetime as the active game.
+- Store invite authorization metadata in a durable shared store so access survives process restarts and is shared across workers.
+- Store only a token hash server-side; do not persist the raw invite token.
 - Return the invite token or invite URL only to the creating user.
 - The invite token authorizes access only while the game status is `waiting`.
 - Revoke the invite token when the game becomes `active`, when the game is deleted, or when creation cleanup runs.
-- Do not persist active-game invite tokens to Prisma.
+- Persist token-hash-to-game association and revocation state in Prisma.
 - Do not add invite token fields to `GameState`; invite authority is access metadata, not chess state.
 
 ## Route Requirements
@@ -131,8 +132,9 @@ For `active` and `finished` games, invite tokens must not authorize non-particip
   - read the current active game state from `gameManager`
   - identify owner/player participation from `ownerId`, `players.white.id`, and `players.black.id`
   - validate the invite token only for `waiting` games
+  - validate invite material through the durable invite metadata store
   - return a consistent result that routes can map to `404`, `401`, `403`, and success responses
-- Keep the helper free of Prisma access.
+- Keep Prisma access limited to invite metadata lookup; do not use Prisma as active chess state.
 - Keep invite-token storage separate from the orchestrator's chess state.
 
 ## Invariants
@@ -151,7 +153,6 @@ For `active` and `finished` games, invite tokens must not authorize non-particip
 - Spectator mode.
 - Public game viewing.
 - Persistent invite links for completed game review.
-- Database-backed active-game invites.
 - Matchmaking or lobby discovery.
 - Changing Ably channel names.
 - Replacing Ably JWT auth with Ably token requests unless required by a future spec.

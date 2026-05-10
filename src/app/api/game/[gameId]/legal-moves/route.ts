@@ -37,7 +37,7 @@ export async function GET(
   }
 
   try {
-    const access = getActiveGameAccess({
+    const access = await getActiveGameAccess({
       gameId,
       userId: session.user.id,
       inviteToken,
