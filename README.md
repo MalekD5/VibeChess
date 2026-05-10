@@ -192,7 +192,7 @@ I have decided to move from purely working on `development` branch to a per-spec
 I will utilize git branch 'folders':
  - `spec/*` branch name convention for the spec itself.
  - `issue/*` for bugs and issues that arises after the spec branch was merged.
- - `refactor/*`: configs, deps, maintenance, code structure, documentation, cleanups.
+ - `refactor/*`: configs, deps, maintenance, code structure, documentation, cleanups — that does not require a complete spec.
 
 ## References
 - [Specification Driven Development](https://en.wikipedia.org/wiki/Specification-driven_development)
