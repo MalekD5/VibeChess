@@ -16,6 +16,7 @@ import {
   parseGameStateMessage,
   parseRealtimePayloadObject,
 } from '@/lib/game-schemas';
+import { appendInviteParam } from '@/lib/url-utils';
 
 export type GameConnectionStatus =
   | 'idle'
@@ -97,11 +98,6 @@ function getMessageError(data: unknown): string {
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
-}
-
-function appendInviteParam(url: string, inviteToken?: string): string {
-  if (!inviteToken) return url;
-  return `${url}${url.includes('?') ? '&' : '?'}invite=${encodeURIComponent(inviteToken)}`;
 }
 
 export function useGameRealtime(input: UseGameRealtimeInput): GameRealtimeSession {

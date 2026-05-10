@@ -5,6 +5,7 @@ import type { GameState, MoveInput, PlayerColor } from '@/types/game';
 import type { BoardSquare } from '@/components/chess-board';
 import { getPromotion } from '@/components/chess-board';
 import { parseJsonResponse } from '@/lib/api-client';
+import { appendInviteParam } from '@/lib/url-utils';
 
 interface LegalMovesResponse {
   moves: { from: string; to: string; san: string; promotion?: string }[];
@@ -17,11 +18,6 @@ interface UseBoardInteractionInput {
   gameId: string;
   inviteToken?: string;
   makeMove: (move: MoveInput) => Promise<void>;
-}
-
-function appendInviteParam(url: string, inviteToken?: string): string {
-  if (!inviteToken) return url;
-  return `${url}${url.includes('?') ? '&' : '?'}invite=${encodeURIComponent(inviteToken)}`;
 }
 
 export interface BoardInteraction {
