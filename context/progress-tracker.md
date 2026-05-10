@@ -12,6 +12,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
+- Active-game invite helper JSDoc follow-up.
 - Ably auth API key presence check now fails fast before active-game access checks.
 - Typed active-game not-found error handling.
 - Shared invite URL parameter helper extracted for realtime game hooks.
