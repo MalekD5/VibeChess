@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { gameManager } from '@/manager/game-manager';
+import { NextRequest, NextResponse } from 'next/server';
+import { getActiveGameAccess } from '@/lib/active-game-access';
 import { getCurrentSession } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -30,7 +30,7 @@ interface RouteParams {
  * JSON error response. Errors thrown while reading the game are caught and
  * normalized into the documented error payloads.
  */
-export async function GET(_req: Request, { params }: RouteParams): Promise<NextResponse> {
+export async function GET(req: NextRequest, { params }: RouteParams): Promise<NextResponse> {
   const session = await getCurrentSession();
   if (!session) {
     return NextResponse.json(
@@ -40,26 +40,31 @@ export async function GET(_req: Request, { params }: RouteParams): Promise<NextR
   }
 
   const { gameId } = await params;
+  const inviteToken = req.headers.get('x-invite-token');
 
   try {
-    const state = gameManager.getGame(gameId);
+    const access = await getActiveGameAccess({
+      gameId,
+      userId: session.user.id,
+      inviteToken,
+    });
 
-    if (state.status !== 'waiting') {
+    if (!access.ok) {
+      if (access.reason === 'not_found') {
+        return NextResponse.json(
+          { gameId, error: 'game_not_found' },
+          { status: 404 },
+        );
+      }
+
       return NextResponse.json(
-        { gameId, error: 'game_already_started' },
-        { status: 409 },
+        { gameId, error: 'forbidden', message: 'Use a valid invite link to join this game.' },
+        { status: 403 },
       );
     }
 
-    return NextResponse.json({ gameId, state, playerId: session.user.id });
+    return NextResponse.json({ gameId, state: access.state, playerId: session.user.id });
   } catch (err) {
-    if (err instanceof Error && err.message.includes('not found')) {
-      return NextResponse.json(
-        { gameId, error: 'game_not_found' },
-        { status: 404 },
-      );
-    }
-
     console.error('[game] failed to read game:', gameId, err);
     return NextResponse.json({ gameId, error: 'game_read_failed' }, { status: 500 });
   }

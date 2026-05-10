@@ -1,6 +1,8 @@
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { NextRequest, NextResponse } from 'next/server';
+import { getActiveGameAccess } from '@/lib/active-game-access';
+import { getActiveGameInviteRevocationKey } from '@/lib/active-game-invites';
 import { getCurrentSession } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -8,10 +10,9 @@ export const runtime = 'nodejs';
 /**
  * Issues a short-lived Ably JWT for a specific game channel.
  *
- * The server generates a fresh `clientId` via `crypto.randomUUID()` — callers
- * cannot supply their own identity. The returned token's capability is scoped
- * exclusively to `game:{gameId}` (subscribe + publish), preventing access to
- * any other channel.
+ * The server binds `x-ably-clientId` to the signed-in session user. The returned
+ * token's capability is scoped exclusively to `game:{gameId}` (subscribe +
+ * publish), preventing access to any other channel.
  *
  * @param req - Incoming request. Must include a `gameId` query parameter
  *   identifying the game channel the client needs access to.
@@ -39,6 +40,21 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'gameId query param is required' }, { status: 400 });
   }
 
+  const inviteToken = req.headers.get('x-invite-token');
+  const access = await getActiveGameAccess({
+    gameId,
+    userId: session.user.id,
+    inviteToken,
+  });
+
+  if (!access.ok) {
+    if (access.reason === 'not_found') {
+      return NextResponse.json({ error: 'game_not_found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  }
+
   const colonIndex = apiKey.indexOf(':');
   if (colonIndex === -1) {
     return NextResponse.json({ error: 'Malformed ABLY_API_KEY' }, { status: 500 });
@@ -51,15 +67,20 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   const nonce = crypto.randomUUID();
+  const claims: Record<string, string> = {
+    'x-ably-capability': JSON.stringify({ [`game:${gameId}`]: ['subscribe', 'publish'] }),
+    'x-ably-clientId': session.user.id,
+    'vibechess-nonce': nonce,
+  };
+
+  if (access.access === 'invite') {
+    claims['x-ably-revocation-key'] = getActiveGameInviteRevocationKey(gameId);
+  }
 
   const token = jwt.sign(
-    {
-      'x-ably-capability': JSON.stringify({ [`game:${gameId}`]: ['subscribe', 'publish'] }),
-      'x-ably-clientId': session.user.id,
-      'vibechess-nonce': nonce,
-    },
+    claims,
     keySecret,
-    { expiresIn: '1h', keyid: keyName },
+    { expiresIn: '2m', keyid: keyName },
   );
 
   return NextResponse.json(token);

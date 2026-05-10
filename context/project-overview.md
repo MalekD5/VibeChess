@@ -30,6 +30,7 @@ VibeChess is a modern, minimal chess platform inspired by Chess.com, focused on 
 
 ### Gameplay
 - Create a game session
+- Share human games with a server-issued invite link; game IDs alone do not grant access
 - Real-time move synchronization (server authoritative)
 - Legal move validation
 - Turn enforcement
@@ -52,6 +53,7 @@ VibeChess is a modern, minimal chess platform inspired by Chess.com, focused on 
 
 ## In Scope
 - Authentication and route protection
+- Invite-only access for waiting human games
 - Game history per account with result
 - Basic private move-by-move review for completed game history
 - Full chess game logic

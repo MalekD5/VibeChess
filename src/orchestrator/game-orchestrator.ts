@@ -1,5 +1,6 @@
 import { createInitialStateForOwner, reducer } from '@/orchestrator/reducer';
 import { normalizeGameState } from '@/orchestrator/game-state-normalizer';
+import { GameNotFoundError } from '@/types/game-errors';
 import type { GameState, GameAction } from '@/types/game';
 import type { GameMode } from '@/types/game';
 
@@ -22,7 +23,7 @@ class GameOrchestrator {
   getState(gameId: string): GameState {
     const state = this.games.get(gameId);
     if (!state) {
-      throw new Error(`Game ${gameId} not found`);
+      throw new GameNotFoundError(gameId);
     }
     const normalized = normalizeGameState(state);
     if (normalized !== state) {

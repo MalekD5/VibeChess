@@ -47,6 +47,8 @@
 
 - Validate and parse request input before any logic runs.
 - Enforce auth and project ownership checks before any mutation.
+- Enforce active-game access before reading game state, returning legal moves, preparing realtime subscriptions, or issuing realtime tokens.
+- Do not treat IDs such as `gameId` as authorization secrets; use explicit access checks or invite tokens.
 - Return consistent, predictable response shapes.
 - Keep route handlers thin — push complexity into shared modules or background tasks.
 

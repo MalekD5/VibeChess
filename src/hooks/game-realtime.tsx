@@ -17,6 +17,7 @@ import {
   parseRealtimePayloadObject,
 } from '@/lib/game-schemas';
 
+
 export type GameConnectionStatus =
   | 'idle'
   | 'connecting'
@@ -27,6 +28,7 @@ export type GameConnectionStatus =
 export interface GameRealtimeSession {
   gameId: string;
   channelName: string;
+  inviteToken?: string;
   playerId: string;
   state: GameState | null;
   connectionStatus: GameConnectionStatus;
@@ -39,6 +41,7 @@ export interface GameRealtimeSession {
 export interface UseGameRealtimeInput {
   gameId: string;
   channelName?: string;
+  inviteToken?: string;
   initialState?: GameState;
   initialPlayerId?: string;
 }
@@ -98,7 +101,13 @@ function getErrorMessage(error: unknown): string {
 }
 
 export function useGameRealtime(input: UseGameRealtimeInput): GameRealtimeSession {
-  const { gameId, channelName = `game:${gameId}`, initialState, initialPlayerId } = input;
+  const {
+    gameId,
+    channelName = `game:${gameId}`,
+    inviteToken,
+    initialState,
+    initialPlayerId,
+  } = input;
   const [playerId] = useState(() => createMountedPlayerId(gameId, initialPlayerId));
   const [state, setState] = useState<GameState | null>(initialState ?? null);
   const [connectionStatus, setConnectionStatus] =
@@ -115,7 +124,10 @@ export function useGameRealtime(input: UseGameRealtimeInput): GameRealtimeSessio
     const subscription = (async () => {
       const response = await fetch(
         `/api/game/${encodeURIComponent(gameId)}/subscribe`,
-        { method: 'POST' },
+        {
+          method: 'POST',
+          ...(inviteToken ? { headers: { 'x-invite-token': inviteToken } } : {}),
+        },
       );
 
       if (!response.ok) {
@@ -133,11 +145,16 @@ export function useGameRealtime(input: UseGameRealtimeInput): GameRealtimeSessio
       }
       throw err;
     }
-  }, [gameId]);
+  }, [gameId, inviteToken]);
+
+  useEffect(() => {
+    serverSubscriptionRef.current = null;
+  }, [gameId, inviteToken]);
 
   useEffect(() => {
     const realtime = new Ably.Realtime({
       authUrl: `/api/ably/auth?gameId=${encodeURIComponent(gameId)}`,
+      ...(inviteToken ? { authHeaders: { 'x-invite-token': inviteToken } } : {}),
     });
     const nextChannel = realtime.channels.get(channelName);
 
@@ -193,7 +210,7 @@ export function useGameRealtime(input: UseGameRealtimeInput): GameRealtimeSessio
       void nextChannel.detach().catch(() => undefined);
       realtime.close();
     };
-  }, [channelName, ensureServerSubscription, gameId]);
+  }, [channelName, ensureServerSubscription, gameId, inviteToken]);
 
   const publishAction = useCallback(
     async (action: GameAction): Promise<void> => {
@@ -235,6 +252,7 @@ export function useGameRealtime(input: UseGameRealtimeInput): GameRealtimeSessio
     () => ({
       gameId,
       channelName,
+      inviteToken,
       playerId,
       state: sessionState,
       connectionStatus,
@@ -246,6 +264,7 @@ export function useGameRealtime(input: UseGameRealtimeInput): GameRealtimeSessio
     [
       gameId,
       channelName,
+      inviteToken,
       playerId,
       sessionState,
       connectionStatus,
@@ -261,10 +280,17 @@ export function GameRealtimeProvider({
   children,
   gameId,
   channelName,
+  inviteToken,
   initialState,
   initialPlayerId,
 }: GameRealtimeProviderProps) {
-  const session = useGameRealtime({ gameId, channelName, initialState, initialPlayerId });
+  const session = useGameRealtime({
+    gameId,
+    channelName,
+    inviteToken,
+    initialState,
+    initialPlayerId,
+  });
 
   return (
     <GameRealtimeContext.Provider value={session}>

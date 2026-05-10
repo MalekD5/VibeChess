@@ -54,8 +54,11 @@ export function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => voi
   );
   const shareUrl = useMemo(() => {
     if (typeof window === 'undefined') return '';
-    return `${window.location.origin}/?game=${encodeURIComponent(session.gameId)}`;
-  }, [session.gameId]);
+    if (!session.inviteToken || state?.status !== 'waiting') return '';
+    const params = new URLSearchParams({ game: session.gameId });
+    params.set('invite', session.inviteToken);
+    return `${window.location.origin}/?${params.toString()}`;
+  }, [session.gameId, session.inviteToken, state?.status]);
 
   const runAction = useCallback(async (action: () => Promise<void>): Promise<boolean> => {
     try {
@@ -101,6 +104,7 @@ export function PlayableGameScreen({ onBackToStart }: { onBackToStart: () => voi
       seatedColor,
       squareById,
       gameId: session.gameId,
+      inviteToken: session.inviteToken,
       makeMove: session.makeMove,
     });
 

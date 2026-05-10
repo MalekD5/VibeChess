@@ -33,6 +33,14 @@
 
 This does NOT go to DB on every update
 
+### Active Game Invite Metadata
+
+- Lives in PostgreSQL via Prisma in `active_game_invite`
+- Stores game-to-invite authorization metadata and revocation state
+- Stores invite token hashes, not raw invite tokens
+- Is queried during active-game access checks and updated when invite access is revoked
+- Is not part of `GameState` and is not the source of truth for chess state
+
 ### Persistent Game Record
 
 Stored in PostgreSQL via Prisma.
@@ -68,6 +76,12 @@ Game state can be reconstructed from:
 - All communication is event-driven through Ably channels
 - Each game has a dedicated real-time channel
 - All client state updates are derived exclusively from orchestrator snapshots
+- `gameId` is an identifier, not an authorization secret
+- Waiting human games require a separate server-issued invite token before a nonparticipant can load, subscribe to, or receive an Ably token for the game
+- Active and finished games are accessible only to the owner or seated players
+- Active-game invite metadata is stored durably in Prisma, separate from `GameState`; raw invite tokens are not stored
+- Ably JWTs issued through invite-only access carry a game-scoped revocation key and are revoked when the game stops waiting or is deleted
+- The Ably API key used for realtime auth must have revocable tokens enabled so invite-only JWTs can be invalidated immediately
 
 Next.js API routes are only for non-realtime commands (auth, game creation, history fetch)
 
@@ -105,6 +119,8 @@ State is mutated only inside the Orchestrator module running in Node runtime
 - The database is not the source of truth for active games
 - Chess.js is used only on the server for validation and state transitions
 - Do not use `middleware.ts` to authorize requests
+- Active-game API routes must enforce session and active-game access checks before reading state, returning legal moves, subscribing the server, or issuing Ably JWTs
+- Never treat a route identifier or database id as an access secret
 - Events for a single game must be processed in arrival order by the Game Orchestrator
 - All clients in a game must converge to the same state after every server update
 - There is exactly one function that mutates game state

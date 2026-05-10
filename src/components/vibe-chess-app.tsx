@@ -17,6 +17,7 @@ interface GameSetup {
   gameId: string;
   channelName: string;
   state: GameState;
+  inviteToken?: string;
   playerId?: string;
 }
 
@@ -24,6 +25,7 @@ interface CreateGameResponse {
   gameId: string;
   channelName: string;
   state: GameState;
+  inviteToken?: string;
   playerId?: string;
 }
 
@@ -37,6 +39,29 @@ interface VibeChessAppProps {
   currentUser: CurrentUser;
 }
 
+interface ParsedJoinInput {
+  gameId: string;
+  inviteToken?: string;
+}
+
+function parseJoinInput(value: string): ParsedJoinInput | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  try {
+    const url = new URL(trimmed);
+    const gameId = url.searchParams.get('game')?.trim();
+    if (!gameId) return null;
+
+    return {
+      gameId,
+      inviteToken: url.searchParams.get('invite') ?? undefined,
+    };
+  } catch {
+    return { gameId: trimmed };
+  }
+}
+
 export default function VibeChessApp({ currentUser }: VibeChessAppProps) {
   const [gameSetup, setGameSetup] = useState<GameSetup | null>(null);
   const [joinGameId, setJoinGameId] = useState('');
@@ -47,39 +72,48 @@ export default function VibeChessApp({ currentUser }: VibeChessAppProps) {
   const [error, setError] = useState<string | null>(null);
   const initialJoinAttemptRef = useRef(false);
 
-  const loadGame = useCallback(async (nextGameId: string): Promise<void> => {
-    setIsLoading(true);
-    setError(null);
+  const loadGame = useCallback(
+    async (nextGameId: string, inviteToken?: string): Promise<void> => {
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      const response = await fetch(`/api/game/${encodeURIComponent(nextGameId)}`);
-      const data = await parseJsonResponse<JoinGameResponse>(
-        response,
-        'Could not join game',
-      );
-      setGameSetup({
-        gameId: data.gameId,
-        channelName: `game:${data.gameId}`,
-        state: data.state,
-        playerId: data.playerId,
-      });
-      setJoinGameId(data.gameId);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not join game');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+      try {
+        const response = await fetch(
+          `/api/game/${encodeURIComponent(nextGameId)}`,
+          inviteToken ? { headers: { 'x-invite-token': inviteToken } } : undefined,
+        );
+        const data = await parseJsonResponse<JoinGameResponse>(
+          response,
+          'Could not join game',
+        );
+        setGameSetup({
+          gameId: data.gameId,
+          channelName: `game:${data.gameId}`,
+          state: data.state,
+          inviteToken,
+          playerId: data.playerId,
+        });
+        setJoinGameId(data.gameId);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not join game');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (initialJoinAttemptRef.current) return;
     initialJoinAttemptRef.current = true;
 
-    const gameId = new URLSearchParams(window.location.search).get('game');
+    const params = new URLSearchParams(window.location.search);
+    const gameId = params.get('game');
     if (!gameId) return;
+    const inviteToken = params.get('invite') ?? undefined;
 
     const timer = window.setTimeout(() => {
-      void loadGame(gameId);
+      void loadGame(gameId, inviteToken);
     }, 0);
 
     return () => window.clearTimeout(timer);
@@ -116,13 +150,13 @@ export default function VibeChessApp({ currentUser }: VibeChessAppProps) {
   }
 
   async function joinExistingGame(): Promise<void> {
-    const nextGameId = joinGameId.trim();
-    if (!nextGameId) {
-      setError('Enter a game ID to join');
+    const joinInput = parseJoinInput(joinGameId);
+    if (!joinInput) {
+      setError('Enter an invite link or a game ID for a game you can access');
       return;
     }
 
-    await loadGame(nextGameId);
+    await loadGame(joinInput.gameId, joinInput.inviteToken);
   }
 
   async function handleSignOut(): Promise<void> {
@@ -144,6 +178,7 @@ export default function VibeChessApp({ currentUser }: VibeChessAppProps) {
         key={gameSetup.gameId}
         gameId={gameSetup.gameId}
         channelName={gameSetup.channelName}
+        inviteToken={gameSetup.inviteToken}
         initialState={gameSetup.state}
         initialPlayerId={gameSetup.playerId}
       >
@@ -163,7 +198,7 @@ export default function VibeChessApp({ currentUser }: VibeChessAppProps) {
             <div className="space-y-2">
               <h1 className="text-3xl font-semibold text-copy-primary">VibeChess</h1>
               <p className="text-sm text-copy-muted">
-                Start a game, share the ID, and play from the live server state.
+                Start a game, share the invite link, and play from the live server state.
               </p>
               <p className="text-xs text-copy-faint">
                 Signed in as {currentUser.email}
@@ -271,18 +306,18 @@ export default function VibeChessApp({ currentUser }: VibeChessAppProps) {
             disabled={isLoading}
             className="rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-copy-primary transition hover:bg-brand/90 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isLoading ? 'Working...' : 'New Game'}
+            {isLoading ? 'Working…' : 'New Game'}
           </button>
 
           <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
             <label htmlFor="join-game-id" className="sr-only">
-              Existing game ID
+              Invite link or accessible game ID
             </label>
             <input
               id="join-game-id"
               value={joinGameId}
               onChange={(event) => setJoinGameId(event.target.value)}
-              placeholder="Existing game ID"
+              placeholder="Invite link or accessible game ID…"
               className="min-h-11 rounded-xl border border-border bg-elevated px-3 text-sm text-copy-primary outline-none transition placeholder:text-copy-faint focus:border-brand"
             />
             <button

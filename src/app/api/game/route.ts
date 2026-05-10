@@ -5,6 +5,10 @@ import { gameManager } from '@/manager/game-manager';
 import { playAiTurnIfNeeded } from '@/manager/ai-turn';
 import type { GameState, PlayerColor } from '@/types/game';
 import {
+  createActiveGameInvite,
+  revokeActiveGameInvite,
+} from '@/lib/active-game-invites';
+import {
   parseGameCreationRequestBody,
   type GameCreationRequest,
 } from '@/lib/game-schemas';
@@ -102,10 +106,14 @@ export async function POST(req: Request): Promise<NextResponse> {
   const gameId = crypto.randomUUID();
   const channelName = `game:${gameId}` as const;
   let gameCreated = false;
+  let inviteToken: string | null = null;
 
   try {
     let state = await gameManager.createGame(gameId, session.user.id, setup.mode);
     gameCreated = true;
+    if (setup.mode === 'human') {
+      inviteToken = await createActiveGameInvite(gameId);
+    }
     await ablyGameAdapter.subscribe(gameId);
 
     if (setup.mode === 'ai') {
@@ -124,8 +132,13 @@ export async function POST(req: Request): Promise<NextResponse> {
       channelName,
       state,
       playerId: session.user.id,
+      inviteToken,
     });
   } catch (err) {
+    if (inviteToken) {
+      await revokeActiveGameInvite(gameId);
+    }
+
     if (gameCreated) {
       try {
         await gameManager.deleteGame(gameId);

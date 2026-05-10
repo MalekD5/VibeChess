@@ -1,5 +1,6 @@
 import { orchestrator } from '@/orchestrator/game-orchestrator';
 import { persistCompletedGame } from '@/lib/game-history';
+import { revokeActiveGameInviteAccess } from '@/lib/active-game-invites';
 import type { GameAction, GameMode, GameState } from '@/types/game';
 
 const queues = new Map<string, Promise<unknown>>();
@@ -10,6 +11,15 @@ function enqueue<T>(gameId: string, task: () => T | Promise<T>): Promise<T> {
   // absorb errors so a rejected task never stalls subsequent enqueued tasks
   queues.set(gameId, next.catch(() => {}));
   return next;
+}
+
+async function revokeInviteAccessBestEffort(gameId: string): Promise<void> {
+  try {
+    await revokeActiveGameInviteAccess(gameId);
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    console.warn(`[GameManager] invite access revocation failed: game=${gameId} reason=${reason}`);
+  }
 }
 
 /**
@@ -56,8 +66,9 @@ class GameManager {
    * @throws If the orchestrator rejects the deletion.
    */
   deleteGame(gameId: string): Promise<void> {
-    const result = enqueue(gameId, () => {
+    const result = enqueue(gameId, async () => {
       orchestrator.deleteGame(gameId);
+      await revokeInviteAccessBestEffort(gameId);
       console.log(`[GameManager] game deleted: ${gameId}`);
     });
     result.finally(() => queues.delete(gameId));
@@ -77,7 +88,11 @@ class GameManager {
     console.log(`[GameManager] event received: game=${gameId} type=${action.type}`);
     return enqueue(gameId, async () => {
       try {
+        const previousStatus = orchestrator.getState(gameId).status;
         const snapshot = orchestrator.dispatch(gameId, action);
+        if (previousStatus === 'waiting' && snapshot.status !== 'waiting') {
+          await revokeInviteAccessBestEffort(gameId);
+        }
         if (snapshot.status === 'finished') {
           await persistCompletedGame(snapshot);
           console.log(`[GameManager] completed game persisted: ${gameId}`);

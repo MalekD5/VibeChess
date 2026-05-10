@@ -138,6 +138,11 @@ function SharePanel({ shareUrl }: { shareUrl: string }) {
 
   return (
     <Panel title="Share">
+      {!shareUrl ? (
+        <p className="rounded-xl bg-elevated px-3 py-3 text-sm text-copy-muted">
+          Invite links are available while a human game is waiting for a player.
+        </p>
+      ) : (
       <div className="grid gap-3">
         <input
           readOnly
@@ -164,6 +169,7 @@ function SharePanel({ shareUrl }: { shareUrl: string }) {
           </p>
         ) : null}
       </div>
+      )}
     </Panel>
   );
 }

@@ -15,6 +15,7 @@ interface UseBoardInteractionInput {
   seatedColor: PlayerColor | null;
   squareById: Map<string, BoardSquare>;
   gameId: string;
+  inviteToken?: string;
   makeMove: (move: MoveInput) => Promise<void>;
 }
 
@@ -31,6 +32,7 @@ export function useBoardInteraction({
   seatedColor,
   squareById,
   gameId,
+  inviteToken,
   makeMove,
 }: UseBoardInteractionInput): BoardInteraction {
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
@@ -56,6 +58,7 @@ export function useBoardInteraction({
   async function fetchLegalTargets(from: string): Promise<Set<string>> {
     const response = await fetch(
       `/api/game/${encodeURIComponent(gameId)}/legal-moves?from=${encodeURIComponent(from)}`,
+      inviteToken ? { headers: { 'x-invite-token': inviteToken } } : undefined,
     );
     const data = await parseJsonResponse<LegalMovesResponse>(
       response,
@@ -166,7 +169,7 @@ export function useBoardInteraction({
         });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [flashInvalidSquare, gameId, isSending, legalTargets, makeMove, seatedColor, selectedSquare, squareById, state],
+    [flashInvalidSquare, gameId, inviteToken, isSending, legalTargets, makeMove, seatedColor, selectedSquare, squareById, state],
   );
 
   return { selectedSquare, legalTargets, flashSquare, isSending, handleSquareClick };

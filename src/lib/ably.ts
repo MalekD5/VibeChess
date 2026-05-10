@@ -1,6 +1,7 @@
 import Ably from 'ably';
 
 let _client: Ably.Realtime | null = null;
+let _restClient: Ably.Rest | null = null;
 
 /**
  * Returns a singleton {@link Ably.Realtime} client for server-side use.
@@ -19,4 +20,13 @@ export function getServerRealtime(): Ably.Realtime {
   }
   _client = new Ably.Realtime({ key: process.env.ABLY_API_KEY });
   return _client;
+}
+
+export function getServerRest(): Ably.Rest {
+  if (_restClient) return _restClient;
+  if (!process.env.ABLY_API_KEY) {
+    throw new Error('ABLY_API_KEY is not set');
+  }
+  _restClient = new Ably.Rest({ key: process.env.ABLY_API_KEY });
+  return _restClient;
 }

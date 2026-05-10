@@ -13,7 +13,7 @@ datasource db {
 }
 
 model User {
-  id            String    @id
+  id            String      @id
   name          String
   email         String
   emailVerified Boolean
@@ -104,4 +104,19 @@ model ChessGame {
   @@index([whitePlayerId])
   @@index([blackPlayerId])
   @@map("chess_game")
+}
+
+model ActiveGameInvite {
+  gameId                  String    @id
+  tokenHash               String    @unique
+  revokedAt               DateTime?
+  ablyRevokedAt           DateTime?
+  ablyRevocationClaimId   String?
+  ablyRevocationClaimedAt DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@index([revokedAt])
+  @@index([ablyRevokedAt])
+  @@map("active_game_invite")
 }
