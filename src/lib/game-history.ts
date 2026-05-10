@@ -349,7 +349,7 @@ function buildHistoryReviewGame(
       continue;
     }
 
-    return null;
+    continue;
   }
 
   const effectiveFinalFen = terminalFinalFen ?? game.finalFen;
