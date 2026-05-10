@@ -1,5 +1,6 @@
 import { gameManager } from '@/manager/game-manager';
 import { hasActiveGameInvite } from '@/lib/active-game-invites';
+import { isGameNotFoundError } from '@/types/game-errors';
 import type { GameState } from '@/types/game';
 
 export type ActiveGameAccess =
@@ -37,7 +38,7 @@ export async function getActiveGameAccess({
   try {
     state = gameManager.getGame(gameId);
   } catch (err) {
-    if (err instanceof Error && err.message.includes('not found')) {
+    if (isGameNotFoundError(err)) {
       return { ok: false, reason: 'not_found' };
     }
 

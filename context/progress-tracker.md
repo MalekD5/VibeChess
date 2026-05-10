@@ -12,6 +12,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
+- Typed active-game not-found error handling.
 - Shared invite URL parameter helper extracted for realtime game hooks.
 - Game invite access revocation is best-effort during manager lifecycle mutations.
 - Spec 18 durable active-game invite access follow-up.
