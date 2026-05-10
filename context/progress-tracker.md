@@ -12,6 +12,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
+- Game invite access revocation is best-effort during manager lifecycle mutations.
 - Spec 18 durable active-game invite access follow-up.
 - Spec 18 invite-based Ably subscriber revocation follow-up.
 - Spec 18: Active Game Invite Access; view transitions were not applicable for this access-control and invite-link flow.

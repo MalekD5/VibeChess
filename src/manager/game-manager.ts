@@ -13,6 +13,15 @@ function enqueue<T>(gameId: string, task: () => T | Promise<T>): Promise<T> {
   return next;
 }
 
+async function revokeInviteAccessBestEffort(gameId: string): Promise<void> {
+  try {
+    await revokeActiveGameInviteAccess(gameId);
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    console.warn(`[GameManager] invite access revocation failed: game=${gameId} reason=${reason}`);
+  }
+}
+
 /**
  * Serialises all per-game lifecycle operations through a per-game promise queue,
  * guaranteeing that concurrent callers never interleave create / delete / move
@@ -59,7 +68,7 @@ class GameManager {
   deleteGame(gameId: string): Promise<void> {
     const result = enqueue(gameId, async () => {
       orchestrator.deleteGame(gameId);
-      await revokeActiveGameInviteAccess(gameId);
+      await revokeInviteAccessBestEffort(gameId);
       console.log(`[GameManager] game deleted: ${gameId}`);
     });
     result.finally(() => queues.delete(gameId));
@@ -82,7 +91,7 @@ class GameManager {
         const previousStatus = orchestrator.getState(gameId).status;
         const snapshot = orchestrator.dispatch(gameId, action);
         if (previousStatus === 'waiting' && snapshot.status !== 'waiting') {
-          await revokeActiveGameInviteAccess(gameId);
+          await revokeInviteAccessBestEffort(gameId);
         }
         if (snapshot.status === 'finished') {
           await persistCompletedGame(snapshot);
