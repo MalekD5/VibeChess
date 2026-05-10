@@ -53,6 +53,7 @@ VibeChess is a modern, minimal chess platform inspired by Chess.com, focused on 
 ## In Scope
 - Authentication and route protection
 - Game history per account with result
+- Basic private move-by-move review for completed game history
 - Full chess game logic
 - AI-Powered game play
 - No Time limits
@@ -68,7 +69,7 @@ VibeChess is a modern, minimal chess platform inspired by Chess.com, focused on 
 - Game replay system
 - Rating or ELO
 - Game analysis
-- Game Replay move by move
+- Public or analysis-grade game replay system
 - Billing and subscription systems
 - Production object storage migration
 
